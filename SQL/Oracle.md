@@ -95,6 +95,10 @@ END;
 
 ### 查询相关
 
+#### 查询存在一个表而不在另一个表中的数据记录
+
+[参考](https://blog.csdn.net/weixin_42342702/article/details/92842741)
+
 ```sql
 1 select A.ID from A left join B on A.ID=B.ID where B.ID is null
 ```
@@ -151,5 +155,18 @@ BEGIN
       );  
   commit;
 end;
+```
+
+### 回滚与恢复
+
+#### 表的回滚
+
+```sql
+-- 查看记录时间点的数据
+select * from 表名 as of timestamp to_date('2021-03-10 18:10:10', 'yyyy-mm-dd hh24:mi:ss');
+-- 让表能够回滚
+alter table SYS_API enable row movement;
+-- 闪回到时间点
+flashback table 表名 to timestamp to_date('2021-03-10 18:10:10', 'yyyy-mm-dd hh24:mi:ss');
 ```
 
