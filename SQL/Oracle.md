@@ -2,6 +2,100 @@
 
 [TOC]
 
+### 基础
+
+#### 安装 Oracle 数据库
+
+- 版本：11g r2 Experss Edition 精简版
+- 下载网址：<https://www.oracle.com/database/technologies/xe-prior-releases.html>
+- 解压并运行 ***exe*** 安装
+- 开始->运行SQL
+
+```sql
+conn sys as sysdba
+-- 密码为安装时输入的
+select 1 from dual;
+exit;
+```
+
+#### 创建用户和表空间
+
+```sql
+sqlplus /nolog;  -- 启动sqlplus不登陆
+conn sys/密码 as sysdba; -- 通过超级管理员以dba的身份连接
+create tablespace 表空间名 datafile '文件路径\\文件名.dbf' size 空间大小; -- 创建表空间
+create user 用户名 identified by 密码 default tablespace 表空间; -- 创建用户并指定表空间
+grant dba to 用户; -- 给用户授予dba权限，dba 最大权限
+```
+
+![image](../resource/images/1.png)
+
+#### 约束
+
+> 1. 主键约束 （PRIMARY KEY）
+> 2. 唯一约束 （UNIQUE）
+> 3. 非空约束 （NOT NULL）
+> 4. 外键约束 （FOREIGN KEY）
+> 5. 检查约束 （CHECK）
+
+##### 主键
+
+- Oracle 中的表可以没有主键
+- 相当于 UNIQUE + NOT NULL 约束
+- 一个表只能有一个主键
+- 主键所在列必须具有索引（主键唯一约束通过索引实现），如果不存在，将会在索引添加的时候自动创建
+
+#### PLSQL 安装
+
+> 官网下载（包括PLSQL及其中文语言包）：<https://www.allroundautomations.com/registered-plsqldev/>
+>
+> 产品号：4vkjwhfeh3ufnqnmpr9brvcuyujrx3n3le
+>
+> 序列号：226959
+>
+> 口令：xs374ca
+
+#### SQL语言介绍
+
+> SQL (Structured Query Language)
+>
+> 1. DDL (Data Definition Languages)：数据定义语句，create、drop、alter等；
+>
+> 2. DML (Data Mainpulation Language)：数据操纵语句，insert、delete、select、update等；
+>
+> 3. DCL (Data Control Language)：数据控制语句，grant、revoke等。
+
+#### 别名
+
+- 列别名
+
+```sql
+SELECT DEPTNO 别名 FROM EMP;
+SELECT DISTINCT DEPTNO AS 别名 FROM EMP;
+```
+
+- 表别名
+
+#### 伪列和虚表
+
+##### 伪列和表达式
+
+说明：查询不存在的列即为伪列，当需要的结果不能直接从表中得到，而是需要计算来展示，则可是使用伪列+表达式实现。
+
+```sql
+select 1 from dual;
+```
+
+##### 虚表
+
+- ***dual***
+
+```sql
+SELECT 999*666 FROM DUAL;
+```
+
+
+
 ### 字符相关
 
 #### 引号
@@ -11,6 +105,14 @@
 ```sql
 ''
 ```
+
+#### 字符串拼接
+
+```sql
+SELECT (ENAME || '-' || JOB) name_job FROM EMP;
+```
+
+
 
 ### 字段类型相关
 
@@ -36,6 +138,32 @@ IS NOT NULL
 ```sql
 SUBSTR(字段, start, end)
 ```
+
+#### null 处理 nvl()
+
+##### nvl()
+
+- nvl(exp1, exp2)
+- exp1：表达式
+- exp2：exp1为 null 时，替换为 参数2的值
+
+```sql
+SELECT ENAME, SAL, COMM, (SAL+NVL(COMM, 0)) income FROM EMP;
+```
+
+##### 排序时 null 处理
+
+- `nulls first`    空值排前面
+- `nulls last `       空值排后面
+
+```sql
+-- 先用COMM降序，NULL值放后面；再用income升序
+SELECT ENAME, SAL, COMM, (SAL+NVL(COMM, 0)) income FROM EMP ORDER BY COMM DESC NULLS LAST, income ASC;
+```
+
+
+
+
 
 ### 建表相关
 
@@ -95,12 +223,52 @@ END;
 
 ### 查询相关
 
+#### 去重
+
+```sql
+select distinct 列名 from 表
+```
+
+#### 排序
+
+```sql
+-- order by 字句在 select 之后执行
+SELECT DEPTNO 别名 FROM EMP ORDER BY 别名 DESC; -- 降序
+
+SELECT DEPTNO 别名 FROM EMP ORDER BY 别名 ASC; -- 升序
+
+SELECT DEPTNO 别名 FROM EMP ORDER BY 别名; -- 默认升序
+```
+
+##### 多个字段排序
+
+```sql
+SELECT ENAME, SAL, DEPTNO FROM EMP ORDER BY DEPTNO ASC, SAL DESC;
+```
+
 #### 查询存在一个表而不在另一个表中的数据记录
 
 [参考](https://blog.csdn.net/weixin_42342702/article/details/92842741)
 
 ```sql
 1 select A.ID from A left join B on A.ID=B.ID where B.ID is null
+```
+
+#### 条件查询
+
+```sql
+select 查询内容 from 数据来源 where 条件
+```
+
+##### 条件运算
+
+``=、>、<、<=、>=、<>、!=、between and、in`
+
+```sql
+-- between ... and ... 是 闭区间 []
+SELECT ENAME, SAL FROM EMP WHERE SAL BETWEEN 2500 AND 5000 ORDER BY SAL;
+-- in里面满足任意一个值就返回
+SELECT ENAME, DEPTNO FROM EMP WHERE DEPTNO IN (10, 30);
 ```
 
 
