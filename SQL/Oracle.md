@@ -262,13 +262,49 @@ select 查询内容 from 数据来源 where 条件
 
 ##### 条件运算
 
-``=、>、<、<=、>=、<>、!=、between and、in`
+`=、>、<、<=、>=、<>、!=、between and、in、not`
 
 ```sql
 -- between ... and ... 是 闭区间 []
 SELECT ENAME, SAL FROM EMP WHERE SAL BETWEEN 2500 AND 5000 ORDER BY SAL;
 -- in里面满足任意一个值就返回
 SELECT ENAME, DEPTNO FROM EMP WHERE DEPTNO IN (10, 30);
+-- not 取反
+SELECT ENAME, DEPTNO FROM EMP WHERE NOT DEPTNO=20;
+
+-- 对空值处理后条件查询
+SELECT * FROM EMP WHERE nvl(COMM, 0) <= 0;
+```
+
+#### 模糊查询
+
+`_`   `%`  
+
+```sql
+-- ENAME 第二个字母为A
+SELECT * FROM EMP WHERE ENAME LIKE '_A%';
+```
+
+#### 特殊字符处理
+
+- ESCAPE(‘a’)        a只是一个标识，可以为任意字符，其后面第一个字符会被转义
+
+```sql
+--- 查询包含%的
+SELECT * FROM EMP WHERE ENAME LIKE '%a%%' ESCAPE('a');
+-- 查询 包含 'b%'，以 b 作为标识
+SELECT * FROM EMP WHERE ENAME LIKE '%bbb%%' ESCAPE('b');
+-- 查询既有 % %后又有 _ 的
+SELECT * FROM EMP WHERE ENAME LIKE '%c%%c_%' ESCAPE('c');
+```
+
+#### where 子句
+
+```sql
+SELECT * FROM EMP WHERE DEPTNO=(SELECT DEPTNO FROM DEPT WHERE DNAME = 'ACCOUNTING');
+
+－－　查询工资在等级３的员工信息
+SELECT * FROM EMP WHERE SAL BETWEEN (SELECT LOSAL FROM SALGRADE WHERE GRADE = 3) AND (SELECT HISAL FROM SALGRADE WHERE GRADE = 3) 
 ```
 
 
