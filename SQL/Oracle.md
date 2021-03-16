@@ -125,11 +125,103 @@ IS NULL
 IS NOT NULL
 ```
 
-### 内置函数
+### 函数
 
-#### 系统时间
+#### 常用单行函数
 
-`sysdate`
+##### 字符函数
+
+```sql
+concat(x, y)  -- 连接x, y字符串
+instr(x, str, start, n)          -- 在x中查找str，可以指定从start开始，也可以查找出现第n次的字符，返回的是索引，从1开始
+length(x)    -- 返回x的长度
+lower(x)    -- 转换为小写
+upper(x)      -- 大写
+ltrim(x, trim_str)   -- 把x左边截去trim_str，缺省trim_str截去左边空格
+rtrim(x, trim_str)    -- 把x右边截去trim_str，缺省trim_str截去右边空格
+trim(x)              -- 去除两边空格
+replace(x, old, new ) -- 在x中查找old，并替换为new
+substr(x, start, length)    -- 截取字符，start为0或1都表示从第一个字符开始,截取长度为length
+```
+
+- 测试
+
+```sql
+SELECT CONCAT('hello', 'world') FROM DUAL;
+SELECT INSTR('helloworld', 'l', 3, 3) FROM DUAL; -- 9
+SELECT ENAME, LENGTH(ENAME) lengthname FROM EMP;
+
+SELECT LTRIM('helloworld', 'hello') FROM DUAL; -- world
+SELECT RTRIM('aaa12345abc', 'abc') FROM DUAL; -- aaa12345
+
+SELECT TRIM('    xxx   ') FROM DUAL;
+
+SELECT REPLACE('zxcvbnabcki', 'abc', 'jjj') FROM DUAL; -- zxcvbnjjjki
+
+SELECT SUBSTR('123456789',1 , 5) FROM DUAL; -- 12345
+```
+
+##### 数学函数
+
+```sql
+abs(x)        x的绝对值
+
+ceil(x)         向上取整
+
+floor(x)       向下取整
+
+mod(x, y)     取模
+```
+
+##### 日期函数
+
+```sql
+sysdate           当前系统时间
+current_date      返回当前系统日期
+add_months(d1, n1) 返回在日期d1基础上再加上 n1 个月后的新日期
+last_day(d1)       返回日期d1所在月份的最后一天的日期
+months_between(d1, d2)    返回日期d1到日期d2之间的月数，d1-d2
+next_day(d1, [c1])        返回日期d1，在下周星期几(参数c1)的日期
+```
+
+- 测试
+
+```sql
+SELECT SYSDATE FROM DUAL; -- 2021-03-16 19:27:40
+SELECT CURRENT_DATE FROM DUAL; -- 2021-03-16 19:28:11
+-- 加天数
+SELECT SYSDATE + 20 FROM DUAL; -- 2021-04-05 19:30:57
+-- 加月数
+SELECT ADD_MONTHS(TO_DATE('2021-03-16', 'yyyy-MM-dd'), 5) FROM DUAL; -- 2021-08-16 00:00:00
+SELECT LAST_DAY(SYSDATE) FROM DUAL; -- 2021-03-31 19:34:54
+-- -6.48973902329749103942652329749103942652
+SELECT MONTHS_BETWEEN(SYSDATE, TO_DATE('2021-10-01', 'yyyy-MM-dd')) FROM DUAL;
+
+SELECT NEXT_DAY(SYSDATE, '星期二') FROM DUAL; -- 2021-03-23 19:39:27
+```
+
+##### 转换函数
+
+```sql
+to_char(x, c)     将日期或数据x，按照c的格式转换为char数据类型
+to_date(x, c)     
+to_number(x)
+```
+
+- 测试
+
+```sql
+SELECT ENAME, HIREDATE, TO_CHAR(HIREDATE, 'yyyy/MM/dd hh24:mi:ss') FROM EMP;
+SELECT ENAME, HIREDATE, TO_CHAR(HIREDATE, 'yyyy "年" MM "月" dd "日" hh24:mi:ss') FROM EMP;
+
+SELECT TO_DATE('2020/11/11 12:12:12', 'yyyy-mm-dd hh24:mi:ss') FROM DUAL;
+-- 当前时间 精确到5位毫秒 16-3月 -2021 19:58:55.36000
+select to_char(current_timestamp(5), 'DD-MON-YYYY HH24:MI:SSxFF') from dual; 
+```
+
+#### 组函数
+
+
 
 #### substr()
 
