@@ -221,6 +221,62 @@ select to_char(current_timestamp(5), 'DD-MON-YYYY HH24:MI:SSxFF') from dual;
 
 #### 组函数
 
+组函数同时对多条记录进行操作，并返回一个结果
+
+> avg()
+>
+> sum()
+>
+> min()
+>
+> max()
+>
+> count()
+>
+> **注意：null 不参与运算**
+
+```sql
+-- 统计记录数
+SELECT COUNT(*) FROM EMP;
+
+-- 去重统计(不会统计重复DEPTNO)
+SELECT COUNT(DISTINCT DEPTNO) FROM EMP;
+
+-- 处理null值后再统计
+SELECT COUNT(NVL(COMM, 0)) FROM EMP;
+```
+
+#### 分组
+
+- select ... from ... where ... group by
+- 执行顺序：from -> where -> group by -> having -> select
+
+```sql
+-- 每个部门的平均工资
+SELECT DEPTNO, AVG(SAL) FROM EMP GROUP BY DEPTNO;
+
+-- 查询相同工种的平均工资以及相同工种的人数
+SELECT JOB, AVG(SAL), count(*) FROM EMP GROUP BY JOB;
+```
+
+- having 对组信息过滤
+
+```sql
+-- 获取平均工资大于2000的部门信息
+SELECT DEPTNO, AVG(SAL) FROM EMP GROUP BY DEPTNO HAVING AVG(SAL) > 2000; 
+-- 执行顺序 from -> group by -> having -> select
+
+-- 查询部门人数大于3的部门
+SELECT DEPTNO, COUNT(*) FROM EMP GROUP BY DEPTNO HAVING COUNT(*) > 3;
+```
+
+- where 对行信息进行过滤
+
+```sql
+-- 查询工资大于2000并且所在部门人数大于2的员工
+SELECT DEPTNO, COUNT(*) FROM EMP WHERE SAL > 1000 GROUP BY DEPTNO HAVING COUNT(*) >= 2;
+```
+
 
 
 #### substr()
