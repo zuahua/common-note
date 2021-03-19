@@ -277,16 +277,6 @@ SELECT DEPTNO, COUNT(*) FROM EMP GROUP BY DEPTNO HAVING COUNT(*) > 3;
 SELECT DEPTNO, COUNT(*) FROM EMP WHERE SAL > 1000 GROUP BY DEPTNO HAVING COUNT(*) >= 2;
 ```
 
-
-
-#### substr()
-
-**注意**：字段索引 start 为 0 或 为 1都表示从第一个位置，共end个
-
-```sql
-SUBSTR(字段, start, end)
-```
-
 #### null 处理 nvl()
 
 ##### nvl()
@@ -309,7 +299,72 @@ SELECT ENAME, SAL, COMM, (SAL+NVL(COMM, 0)) income FROM EMP;
 SELECT ENAME, SAL, COMM, (SAL+NVL(COMM, 0)) income FROM EMP ORDER BY COMM DESC NULLS LAST, income ASC;
 ```
 
+### 分页与去重
 
+#### 分页介绍
+
+- (假分页) 一次性查出所有记录，只返回部分记录；
+- (真分页)只查分页的记录。
+
+> 分页的核心是计算每页有多少记录、总页数、第几页；每一页的数据则只需要起始记录和结束记录。
+
+##### rownum
+
+- 伪字段，记录结果集每一条记录的序号，从1开始
+- 注意1：不能使用 rownum > 数字 作为条件，因为结果集中第一条记录永远是 1 ，rownum > 正数 无结果，rownum >= 1 返回所有记录
+- 要实现只返回 某个区间的记录，可以先查 rownum 作为一列的结果作为子查询。（注意给 rownum 取别名）
+
+```sql
+-- 返回前5条记录
+SELECT ENAME, SAL, rownum FROM EMP WHERE rownum <= 5
+-- 无记录
+SELECT ENAME, SAL, rownum FROM EMP WHERE rownum > 1
+-- 查询 5-10条记录
+SELECT * FROM (SELECT ENAME, SAL, ROWNUM AS xh FROM EMP WHERE ROWNUM <= 10) r1 WHERE xh BETWEEN 5 AND 10
+```
+
+##### oracle 分页实现
+
+- 注意2：对排序的分页时，需要先将排序结果作为子查询，再查 rownum 命别名，再用别名计算分页；（因为 order by 执行顺序在最后）
+
+```sql
+-- 查询员工信息，工资降序，分页，每页3条记录
+-- 第1页
+SELECT r2.* FROM (SELECT r1.*,rownum xh FROM (SELECT ENAME, SAL, DEPTNO FROM EMP ORDER BY SAL DESC) r1) r2 WHERE r2.xh>0 AND r2.xh<=3;
+-- 第2页
+SELECT r2.* FROM (SELECT r1.*,rownum xh FROM (SELECT ENAME, SAL, DEPTNO FROM EMP ORDER BY SAL DESC) r1) r2 WHERE r2.xh>3 AND r2.xh<=6;
+```
+
+#### 去除重复记录
+
+##### rowid 介绍
+
+- 根据每一行数据物理地址信息编码成一个伪列
+- 只对某个字段进行去重，distinct 与 group by 会对要查询的字段一起进行去重，这时使用 rowid 去重。
+
+
+
+##### 重复记录的查找
+
+```sql
+SELECT c.*, rowid FROM copy c ORDER BY deptno;
+```
+
+<img src="F:\java\_note\common-note\resource\images\2.png" style="zoom:67%;" />
+
+- 删除重复记录，只保留 rowid 最小的记录
+
+````sql
+-- 删除重复记录，只保留 rowid 最小的记录
+DELETE FROM COPY WHERE ROWID NOT IN (SELECT MIN(rowid) FROM COPY GROUP BY DEPTNO, DNAME, LOC);
+````
+
+- 按某个字段去重
+
+```sql
+-- 按 DEPTNO 字段去重，保留 rowid 最大的
+SELECT * FROM COPY WHERE ROWID IN (SELECT MAX(ROWID) FROM COPY GROUP BY DEPTNO);
+```
 
 
 
