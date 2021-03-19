@@ -475,6 +475,32 @@ INSERT INTO 表1(字段1) SELECT 字段1 FROM (SELECT DISTINCT 字段1 FROM 表2
 
 ### 高级
 
+#### 存储过程
+
+> 教程： <https://zhuanlan.zhihu.com/p/137643958>
+>
+> 常用结构：<https://zhuanlan.zhihu.com/p/54890263>
+
+
+
+- 创建
+
+```sql
+create or replace procedure PROC_ZS_YJSE_RKRQ as
+begin
+  INSERT INTO ZS_YJSE_RKRQ(RKRQ) SELECT DISTINCT RKRQ FROM ZS_YJSF_STATISTICS1 s WHERE s.RKRQ NOT IN (SELECT RKRQ FROM ZS_YJSE_RKRQ) ORDER BY RKRQ DESC;
+  commit;
+end;
+```
+
+- 调用
+
+```sql
+call PROC_NAME(参数)
+```
+
+
+
 #### 创建定时器
 
 参考：<https://blog.csdn.net/qq_25615395/article/details/79316368>
@@ -508,6 +534,14 @@ BEGIN
   commit;
 end;
 ```
+
+3. 查看用户的定时器
+
+```sql
+SELECT * FROM user_jobs;
+```
+
+
 
 ### 回滚与恢复
 
