@@ -366,11 +366,238 @@ DELETE FROM COPY WHERE ROWID NOT IN (SELECT MIN(rowid) FROM COPY GROUP BY DEPTNO
 SELECT * FROM COPY WHERE ROWID IN (SELECT MAX(ROWID) FROM COPY GROUP BY DEPTNO);
 ```
 
+### 表连接
 
+#### 表连接介绍
 
-### 建表相关
+- 连接多张表，特别是具有外键关系的表
 
-#### 主键
+- 92标准
+- 99标准
+
+#### SQL 92 语法
+
+- 结构 `select ... from t1,t2,t3... where ...`
+- 很多时候需要给表取别名，可能存在自连接的情况
+- 原理是先做笛卡尔连接，再用 where 条件筛选
+
+##### 笛卡尔积
+
+- 两个集合里面的每一个成员，都与对方集合中的任意一个成员有关联。
+- 结果数量为两张表的乘积
+
+```sql
+SELECT * FROM EMP e, DEPT d;
+```
+
+##### SQL 92 等值连接
+
+```sql
+SELECT * FROM EMP e, DEPT d WHERE e.DEPTNO=d.DEPTNO ORDER BY EMPNO;
+-- 查询出所有部门的员工数量及其部门信息
+SELECT * FROM DEPT d, (SELECT COUNT(*), DEPTNO FROM EMP GROUP BY DEPTNO) e WHERE d.DEPTNO = e.DEPTNO;
+```
+
+##### SQL 92 非等值连接
+
+- `!= 、> 、 < 、 <> 、 between and`
+
+```sql
+-- 查询员工姓名，工资及其等级
+SELECT ENAME,SAL,GRADE FROM EMP e, SALGRADE s WHERE e.SAL BETWEEN s.LOSAL AND s.HISAL;
+```
+
+##### SQL 92 外连接
+
+###### 内联接
+
+- 查询部门信息及其人数（简单内连接，根据条件连接，不满足条件的会被舍去
+
+```sql
+-- 查询部门信息及其人数（简单内连接，根据条件连接，不满足条件的会被舍去）
+SELECT * FROM DEPT d, (SELECT DEPTNO, COUNT(*) FROM EMP GROUP BY DEPTNO) r WHERE d.DEPTNO = r.DEPTNO
+```
+
+| DEPTNO |   DNAME    |   LOC    | DEPTNO | COUNT(*) |
+| :----: | :--------: | :------: | :----: | :------: |
+|   10   | ACCOUNTING | NEW YORK |   10   |    3     |
+|   20   |  RESEARCH  |  DALLAS  |   20   |    3     |
+|   30   |   SALES    | CHICAGO  |   30   |    6     |
+
+###### 外联接
+
+- 条件后面加上 (+) 表示**从表**，没有(+)的是主表，主表的所有记录都会存在，不满足条件的字段为 NULL
+- 92 标准 不用区分 左外联接 和 右外联接；只需知道 (+) 标识从表。
+
+```sql
+-- 外联接 查询部门信息及其人数 为NULL字段设为0
+SELECT d.DEPTNO, DNAME, LOC, NVL(r.c, 0)  FROM DEPT d, (SELECT DEPTNO, COUNT(*) c FROM EMP GROUP BY DEPTNO) r WHERE d.DEPTNO = r.DEPTNO(+)
+```
+
+| DEPTNO | DNAME      | LOC      | NVL(R.C,0) |
+| ------ | ---------- | -------- | ---------- |
+| 10     | ACCOUNTING | NEW YORK | 3          |
+| 20     | RESEARCH   | DALLAS   | 3          |
+| 30     | SALES      | CHICAGO  | 6          |
+| 40     | OPERATIONS | BOSTON   | 0          |
+
+##### SQL 92 自连接
+
+- 特殊的等值连接，来自于同一张表
+
+```sql
+-- 查询出每个有上级的员工自己的信息及其上级的信息
+SELECT e1.ENAME, e1.EMPNO, e2.ENAME MGRNAME, e2.EMPNO MGRNO FROM EMP e1, EMP e2 WHERE e1.EMPNO = e2.MGR
+```
+
+#### SQL 99 语法
+
+##### cross join
+
+- 交叉连接，实现笛卡尔积
+- 结果数量为 A*B
+
+```sql
+SELECT * FROM EMP CROSS JOIN DEPT;
+```
+
+##### natural join
+
+- 自然连接，做等值连接
+- 需要有（同名列、主外键）
+
+- 自动根据同名列或主外键等值连接
+
+```sql
+-- 查询员工信息及其部门信息
+SELECT ENAME,DEPTNO,DNAME,LOC FROM EMP NATURAL JOIN DEPT;
+```
+
+##### join using
+
+- using 连接，等值连接
+- 必须有同名列
+
+```sql
+-- 查询员工信息及其部门信息
+SELECT ENAME,DEPTNO,DNAME,LOC FROM EMP JOIN DEPT USING(DEPTNO);
+
+-- 查询员工信息及其部门信息为10的
+SELECT ENAME,DEPTNO,DNAME,LOC FROM EMP JOIN DEPT USING(DEPTNO) WHERE DEPTNO=10;
+
+SELECT ENAME,DEPTNO,DNAME,LOC FROM EMP NATURAL JOIN DEPT WHERE DEPTNO=10;
+```
+
+##### join on
+
+- on 连接，可做等值连接、非等值连接、自连接，可以解决一切连接，关系列必须要区分
+
+```sql
+-- 查询员工信息及其部门信息
+SELECT ENAME,e.DEPTNO,DNAME,LOC FROM EMP e JOIN DEPT d ON e.DEPTNO=d.DEPTNO;
+-- 查询员工信息及其工资等级
+SELECT e.ENAME,e.SAL,s.GRADE FROM EMP e JOIN SALGRADE s ON e.SAL BETWEEN s.LOSAL AND s.HISAL
+```
+
+##### outer join
+
+- 外连接 有主从之分
+
+- left join on 左外连接
+- left join using  左外连接（只能等值连接）
+- right join on 右外连接
+- right join on 右外连接（只能等值连接）
+
+```sql
+-- 查看所有部门及其员工数量
+SELECT * FROM DEPT d LEFT JOIN (SELECT DEPTNO,COUNT(*) FROM EMP GROUP BY DEPTNO) r ON d.DEPTNO = r.DEPTNO 
+
+-- 查询员工信息及其上级信息
+SELECT e.EMPNO,e.ENAME,m.MGR,m.ENAME MGRNAME FROM EMP e LEFT JOIN EMP m ON e.EMPNO=m.EMPNO
+```
+
+##### 全连接
+
+```sql
+-- 查询所有员工及其部门信息，40部门无员工也会显示
+SELECT * FROM EMP e FULL JOIN DEPT d ON e.DEPTNO=d.DEPTNO
+```
+
+### 集合操作
+
+> Union：并集(去重)，不包括重复行同时进行默认规则排序
+>
+> Union All：全集，不去重，不排序
+>
+> Intersect：交集，去重，不包括重复行，默认排序
+>
+> Minus：差集，减去重复行，默认排序
+
+```sql
+(SELECT 'a','b' FROM DUAL
+UNION 
+SELECT 'c','d' FROM DUAL
+UNION ALL
+SELECT 'c','d' FROM DUAL)
+INTERSECT 
+(SELECT 'a','b' FROM DUAL
+UNION 
+SELECT 'c','d' FROM DUAL
+UNION ALL
+SELECT 'c','d' FROM DUAL)
+MINUS
+SELECT 'a','b' FROM DUAL
+```
+
+### DDL 相关
+
+#### 介绍
+
+- DDL：Data Definition Language，定义不同的数据段、数据库、表、列、索引
+- create、drop、alter
+
+#### 表操作
+
+##### 创建表
+
+- 创建新表
+
+```sql
+create table 表名(
+	字段名 类型(长度),
+    ...其他字段...
+);
+```
+
+- 从其他表拷贝结构
+
+```sql
+create table 表名 as select 字段列表 from 已有表 where 1!=1
+```
+
+###### Oracle 数据类型
+
+| 类型                         | 描述                                                         |
+| ---------------------------- | ------------------------------------------------------------ |
+| CHAR()                       | CHAR 类型，定长字符串，会用空格填充来达到其最大长度。非 NULL 的 CHAR(12) 总是包含 12 字节信息。CHAR 字段最多可以存储 2,000 字节的信息。如果创建表时，不指定 CHAR 长度，则默认为 1。 |
+| VARCHAR2()                   | 变长字符串，与 CHAR 类型不同，它不会使用空格填充至最大长度。VARCHAR2 最多可以存储 4,000 字节的信息。 |
+| NVARCHAR2()                  | 这是一个包含 UNICODE 格式数据的变长字符串。 NVARCHAR2 最多可以存储 4,000字节的信息。 |
+| NUMBER(P,S)                  | P 是 Precision 的英文缩写，即精度缩写，表示有效数字的位数，最多不能超过 38 个有效数字。<br/>S 是 Scale 的英文缩写，表示小数点数字的位数。 |
+| INTEGER                      | INTEGER 是 NUMBER 的子类型，它等同于 NUMBER（38,0），用来存储整数。若插入、更新的数值有小数，则会被四舍五入。 |
+| BINARY_FLOAT                 | BINARY_FLOAT 是 32 位、 单精度浮点数字数据类型。可以支持至少 6 位精度,每个BINARY_FLOAT 的值需要 5 个字节，包括长度字节 |
+| BINARY_DOUBLE                | BINARY_DOUBLE 是为 64 位，双精度浮点数字数据类型。每个 BINARY_DOUBLE的值需要 9 个字节，包括长度字节。 |
+| DATE                         | DATE 是最常用的数据类型，日期数据类型存储日期和时间信息。虽然可以用字符或数字类型表示日期和时间信息，但是日期数据类型具有特殊关联的属性。为每个日期值，Oracle存储以下信息： 世纪、 年、 月、 日期、 小时、 分钟和秒。一般占用 7 个字节的存储空间。 |
+| TIMESTAMP                    | 这是一个 7 字节或 12 字节的定宽日期/时间数据类型。它与 DATE 数据类型不同，因为TIMESTAMP 可以包含小数秒，带小数秒的 TIMESTAMP 在小数点右边最多可以保留 9 位。 |
+| TIMESTAMPWITH TIME ZONE      | 这是 TIMESTAMP 类型的变种，它包含了时区偏移量的值。          |
+| TIMESTAMPWITH LOCALTIME ZONE | 将时间数据以数据库时区进行规范化后进行存储                   |
+| CLOB                         | Character Large Object 二进制数据，存储单字节和多字节字符数据。最大长度 4G |
+| BLOB                         | Binary Large Object 它存储非结构化的二进制数据大对象，它可以被认为是没有字符集语义的比特流，一般是图像、声音、视频等文件。最大长度 4G。 |
+| NCLOB                        | 存储 UNICODE 类型的数据 ，最大长度 4G。                      |
+| LONG                         | 存储变长字符串，最多达 2G字节                                |
+| RAW                          | 用于存储二进制或字符类型数据，必须制定长度。这种数据类型存储的数据不会发生字符集转换。可存放多媒体图象声音等。 |
+| LONG RAW                     | 能存储 2GB 的原始二进制数据，可存放多媒体图象声音等          |
+
+##### 添加主键
 
 DBeaver 中：
 
@@ -380,7 +607,7 @@ DBeaver 中：
 | :------: | :----: | :----: | :---------: | :--: |
 | 对应字段 | 自定义 |  表名  | PRIMARY KEY | 不填 |
 
-#### 自增
+##### 设置自增
 
 1. 添加序列
 
@@ -423,6 +650,153 @@ END;
 |    状态    |                           ENABLED                            |
 |    描述    | 触发器名称   <br/>BEFORE INSERT ON 表名    <br/>	for each row |
 |  动作类型  |                            PL/SQL                            |
+
+##### 修改表结构
+
+![](F:\java\_note\common-note\resource\images\3.png)
+
+#### 约束
+
+1. 主键约束 （PRIMARY KEY）
+2. 唯一约束 （UNIQUE）
+3. 非空约束 （NOT NULL）
+4. 外键约束 （FOREIGN KEY）
+5. 检查约束 （CHECK）
+
+##### 创建表和约束
+
+###### 表名：tb_user
+
+| 编号 | 字段名   | 字段类型     | 说明                           |
+| ---- | -------- | ------------ | ------------------------------ |
+| 1    | userid   | number(5)    | 用户id，主键                   |
+| 2    | username | varchar2(30) | 用户名，非空，4~20字节         |
+| 3    | userpwd  | varchar2(20) | 密码，非空，4~18字节           |
+| 4    | age      | number(3)    | 年龄，默认18，值大于等于18     |
+| 5    | gender   | char(3)      | 性别，默认‘男’，只能‘男’  ‘女’ |
+| 6    | email    | varchar2(30) | 邮箱，唯一                     |
+| 7    | regtime  | date         | 注册时间 默认当前时间          |
+
+###### 表名：tb_txt 文章表
+
+| 编号 | 字段名  | 字段类型       | 说明                                                        |
+| ---- | ------- | -------------- | ----------------------------------------------------------- |
+| 1    | txtid   | number(5)      | 文章编号，主键                                              |
+| 2    | title   | varchar2(32)   | 文章标题，非空                                              |
+| 3    | txt     | varchar2(1024) | 内容，最大长度1024                                          |
+| 4    | pubtime | date           | 发布日期，默认当前日期                                      |
+| 5    | userid  | number(5)      | 作者，外键，参考用户表用户id，当用户表中删除时，自设为 null |
+
+###### 创建表，默认约束名
+
+```sql
+CREATE TABLE tb_user(
+	userid number(5) PRIMARY KEY,
+	username varchar2(30) NOT NULL check(LENGTH(username) BETWEEN 4 AND 20),
+	userpwd varchar2(20) CHECK(LENGTH(userpwd) BETWEEN 4 AND 18) NOT NULL,
+	age number(3) DEFAULT(18) CHECK(age>=18),
+	gender char(3) DEFAULT('男') CHECK(gender IN ('男','女')),
+	email varchar2(30) UNIQUE,
+	regtime DATE DEFAULT(sysdate)
+);
+
+CREATE TABLE tb_txt(
+	txtid number(5) PRIMARY KEY,
+	title varchar2(32) NOT NULL,
+	txt varchar2(1024),
+	pubtime DATE DEFAULT(sysdate),
+	userid number(5) REFERENCES tb_user(userid) ON DELETE SET NULL
+);
+```
+
+###### 创建表，设定约束名
+
+```sql
+CREATE TABLE tb_user(
+	userid number(5),
+	username varchar2(30) CONSTRAINT nn_user_name NOT NULL,
+	userpwd varchar2(20) CONSTRAINT nn_user_pwd NOT NULL,
+	age number(3) DEFAULT(18),
+	gender char(3) DEFAULT('男'),
+	email varchar2(30),
+	regtime DATE DEFAULT(sysdate),
+	CONSTRAINT pk_user_id PRIMARY KEY(userid),
+	CONSTRAINT ck_user_name check(LENGTH(username) BETWEEN 4 AND 20),
+	CONSTRAINT ck_user_pwd CHECK(LENGTH(userpwd) BETWEEN 4 AND 18),
+	CONSTRAINT ck_age CHECK(age>=18),
+	CONSTRAINT ck_gender CHECK(gender IN ('男','女')),
+	CONSTRAINT uni_email UNIQUE(email)
+);
+
+
+CREATE TABLE tb_txt(
+	txtid number(5),
+	title varchar2(32) CONSTRAINT nn_title NOT NULL,
+	txt varchar2(1024),
+	pubtime DATE DEFAULT(sysdate),
+	userid number(5),
+	CONSTRAINT pk_txt_id PRIMARY KEY(txtid),
+	CONSTRAINT fk_user_id FOREIGN KEY(userid) REFERENCES tb_user(userid) ON DELETE SET NULL 
+);
+```
+
+###### 创建并追加约束
+
+ ```sql
+CREATE TABLE tb_user(
+	userid number(5),
+	username varchar2(30),
+	userpwd varchar2(20),
+	age number(3),
+	gender char(3),
+	email varchar2(30),
+	regtime DATE
+);
+-- 追加约束
+ALTER TABLE tb_user ADD CONSTRAINT pk_user_id PRIMARY KEY (userid);
+ALTER TABLE tb_user ADD CONSTRAINT ck_user_name check(LENGTH(username) BETWEEN 4 AND 20); 
+ALTER TABLE tb_user ADD CONSTRAINT ck_user_pwd CHECK(LENGTH(userpwd) BETWEEN 4 AND 18);
+ALTER TABLE tb_user ADD CONSTRAINT ck_age CHECK(age>=18);
+ALTER TABLE tb_user ADD CONSTRAINT ck_gender CHECK(gender IN ('男','女'));
+ALTER TABLE tb_user ADD CONSTRAINT uq_email UNIQUE(email);
+-- 非空与默认
+ALTER TABLE tb_user MODIFY (username CONSTRAINT nn_user_name NOT NULL);
+ALTER TABLE tb_user MODIFY (userpwd CONSTRAINT nn_user_pwd NOT NULL);
+ALTER TABLE tb_user MODIFY (age DEFAULT(18));
+ALTER TABLE tb_user MODIFY (gender DEFAULT ('男'));
+ ```
+
+###### 外键三种方式
+
+```sql
+ALTER TABLE tb_txt ADD CONSTRAINT fk_txt_user_id FOREIGN KEY (userid) REFERENCES tb_user(userid); -- 强制不让删
+ALTER TABLE tb_txt ADD CONSTRAINT fk_txt_user_id FOREIGN KEY (userid) REFERENCES tb_user(userid) ON DELETE SET NULL; -- 自动设为空
+ALTER TABLE tb_txt ADD CONSTRAINT fk_txt_user_id FOREIGN KEY (userid) REFERENCES tb_user(userid) ON DELETE CASCADE; -- 级联删除
+```
+
+##### 禁用和启用约束
+
+###### 约束的两类状态
+
+1. 启用/禁用 (`enable/disable`): 是对**新添加**数据的约束。
+2. 验证/非验证 (`validate/novalidate`): 添加约束时，表中已有数据，是否对已有数据进行校验。
+
+###### 约束状态的4种情况
+
+1. enable validate：默认
+2. enable novalidate
+3. disable validate
+4. disable novalidate
+
+##### 删除约束
+
+```sql
+ALTER TABLE TB_USER DROP CONSTRAINT ck_user_name;
+-- 
+ALTER TABLE 表名 DROP CONSTRAINT 约束名;
+```
+
+
 
 ### 查询相关
 
@@ -525,8 +899,41 @@ insert into 表名(字段1, 字段2, ...) values(值1, 值2, ...)
 表1和表2有相同 ***字段1***
 
 ```sql
+-- 
 INSERT INTO 表1(字段1) SELECT 字段1 FROM (SELECT DISTINCT 字段1 FROM 表2 ORDER BY 字段1 DESC);
+-- 从其他表拷贝 注意 value 无 s
+INSERT INTO 表1(字段) value(select 字段 from 表2)
 ```
+
+### 更新相关
+
+- 注意：***where*** ，**无条件更新全表**
+
+```sql
+update 表 set col1=值1,col2=值2,... where 条件
+
+update 表 set (col1,col2) = (select 值1,值2 from dual) where 条件
+```
+
+
+
+### 删除相关
+
+- 注意：***where*** ，**无条件删全表**
+
+```sql
+-- 删除所有数据
+delete 表;
+delete from 表 where 条件
+```
+
+#### 删除主表（外键被参考的表）记录
+
+建立外键时 三种情况：
+
+1. 默认外键方式，强制不让删
+2. on delete set null 从表相关记录设为 null
+3. on delete cascade 从表相关记录一起删除
 
 ### 高级
 
@@ -610,4 +1017,10 @@ alter table SYS_API enable row movement;
 -- 闪回到时间点
 flashback table 表名 to timestamp to_date('2021-03-10 18:10:10', 'yyyy-mm-dd hh24:mi:ss');
 ```
+
+### 参考
+
+<https://www.bilibili.com/video/BV1YK4y1D7u4?p=47&spm_id_from=pageDriver>
+
+<https://zhuanlan.zhihu.com/p/70600799>
 
