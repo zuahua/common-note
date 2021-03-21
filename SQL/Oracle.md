@@ -937,13 +937,52 @@ delete from 表 where 条件
 
 ### 高级
 
+#### 循环语句
+
+```sql
+-- loop
+DECLARE 
+	i int := 1;
+BEGIN 
+	LOOP
+		INSERT INTO TEMP(id) values(i);
+		EXIT WHEN i=12;
+		i := i + 1;
+	END LOOP;		
+END;
+
+-- while
+DECLARE 
+	i int := 1;
+BEGIN 
+	WHILE i < 12 LOOP
+		INSERT INTO TEMP(id) values(i);
+		i := i + 1;
+	END LOOP;
+END;
+
+-- for
+-- 循环变量为隐式定义，不需要显示声明，并且默认步长为1，添加 revserse 表示从高到低
+BEGIN 
+	FOR i IN reverse 1..12 LOOP
+		INSERT INTO TEMP(id) values(i);
+	END LOOP;
+END;
+```
+
+
+
 #### 存储过程
 
 > 教程： <https://zhuanlan.zhihu.com/p/137643958>
 >
 > 常用结构：<https://zhuanlan.zhihu.com/p/54890263>
 
+注意点：
 
+1. call 调用时，过程后的 ()
+
+   
 
 - 创建
 
@@ -959,6 +998,32 @@ end;
 
 ```sql
 call PROC_NAME(参数)
+```
+
+- 例1，传入参数插入表
+
+```sql
+CREATE OR REPLACE PROCEDURE proc_test(
+in_user_id IN NUMBER,in_user_name IN varchar2, in_user_pwd IN varchar2,
+in_age IN NUMBER,in_gender IN char,in_email IN varchar2,in_reg_time IN DATE)
+AS
+BEGIN
+	INSERT INTO TB_USER(USERID,USERNAME,USERPWD,AGE,GENDER,EMAIL,REGTIME) VALUES(in_user_id,in_user_name,in_user_pwd,in_age,in_gender,in_email,in_reg_time);
+END;
+
+CALL proc_test(11,'zh','123456',18,'男','email@mail.com',SYSDATE);
+```
+
+- 例2，从一张表中选出数据，插入另一张表
+
+```sql
+CREATE OR REPLACE PROCEDURE proc_test2
+AS
+BEGIN 
+	INSERT INTO DEPT SELECT * FROM COPY;
+END;
+
+CALL proc_test2();
 ```
 
 
