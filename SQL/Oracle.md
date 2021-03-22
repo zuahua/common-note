@@ -181,7 +181,7 @@ current_date      返回当前系统日期
 add_months(d1, n1) 返回在日期d1基础上再加上 n1 个月后的新日期
 last_day(d1)       返回日期d1所在月份的最后一天的日期
 months_between(d1, d2)    返回日期d1到日期d2之间的月数，d1-d2
-next_day(d1, [c1])        返回日期d1，在下周星期几(参数c1)的日期
+next_day(d1, [c1])        返回日期d1，在下周星期几(参数c1)的日期，参数c1若为数字1-7，表示星期天->星期六
 ```
 
 - 测试
@@ -198,6 +198,27 @@ SELECT LAST_DAY(SYSDATE) FROM DUAL; -- 2021-03-31 19:34:54
 SELECT MONTHS_BETWEEN(SYSDATE, TO_DATE('2021-10-01', 'yyyy-MM-dd')) FROM DUAL;
 
 SELECT NEXT_DAY(SYSDATE, '星期二') FROM DUAL; -- 2021-03-23 19:39:27
+```
+
+##### 日期截取函数
+
+- trunc()
+
+```sql
+-- 2021-03-22 00:00:00
+SELECT TRUNC(SYSDATE) FROM dual;
+-- 2021-01-01 00:00:00
+SELECT TRUNC(SYSDATE, 'yy') FROM dual;
+-- 2021-03-01 00:00:00
+SELECT TRUNC(SYSDATE, 'mm') FROM dual;
+-- 2021-03-22 00:00:00
+SELECT TRUNC(SYSDATE, 'dd') FROM dual;
+-- 2021-03-22 11:00:00
+SELECT TRUNC(SYSDATE, 'hh') FROM dual;
+-- 2021-03-22 11:48:00
+SELECT TRUNC(SYSDATE, 'mi') FROM dual;
+
+-- 没有 秒 的截取
 ```
 
 ##### 转换函数
@@ -653,7 +674,7 @@ END;
 
 ##### 修改表结构
 
-![](F:\java\_note\common-note\resource\images\3.png)
+![](../resource/images/3.png)
 
 #### 约束
 
@@ -1026,9 +1047,37 @@ END;
 CALL proc_test2();
 ```
 
+##### 实例 过程
+
+- 注意：声明变量 必须 添加 **类型长度**
+
+```sql
+DECLARE 
+tax_type varchar2(50) := '资产转让';
+tax_descrip varchar2(50) := '不合法房屋买卖'; -- 不合法房屋买卖 不合法出租
+date_str varchar2(50) := '2021-01-01'; 
+swjgdm varchar2(50) := '1320697%';
+TRANS_MONEY varchar2(50) := '90';
+TAX_MONEY varchar2(50) := '220';
+STATUS varchar2(50) := '0';
+per_date DATE := to_date(date_str,'yyyy-mm-dd hh24:mi:ss');
+per_date_str varchar2(50) := substr(to_char(per_date,'yyyy-mm-dd hh24:mi:ss'),1,10);
+per_rownum int := 9;
+BEGIN
+	FOR i IN 1..2 LOOP
+		INSERT INTO T_APP_TAX(SHXYDM, TYPE, DESCRIP, OCCU_TIME, TRANS_MONEY, TAX_MONEY, ORGANIZATION, SUGGEST_TIME, RECORD_TIME, STATUS, COLLECTER, NOTE, FK_STATUS, SJRKSK, DJXH) 
+SELECT SHXYDM, tax_type AS "TYPE", tax_descrip AS DESCRIP, per_date_str AS OCCU_TIME, TRANS_MONEY as TRANS_MONEY, TAX_MONEY AS TAX_MONEY, SUBSTR(ZGSWSKFJ_DM,1,11) AS ORGANIZATION, per_date_str AS SUGGEST_TIME, (per_date+15/24) AS RECORD_TIME, STATUS AS STATUS, SUBSTR(JDXZ_DM,1,11) AS COLLECTER, '测试' AS NOTE, '0' AS FK_STATUS, '0' AS SJRKSK, DJXH FROM DJ_NSRXX_NEW WHERE ZGSWSKFJ_DM LIKE swjgdm AND SHXYDM IS NOT NULL AND rownum <= per_rownum;
+	
+		per_date := add_months(to_date(date_str,'yyyy-mm-dd hh24:mi:ss'), i);
+		per_date_str := substr(to_char(per_date,'yyyy-mm-dd hh24:mi:ss'),1,10);
+	END LOOP; 
+	COMMIT;
+end;
+```
 
 
-#### 创建定时器
+
+#### 创建定时任务
 
 参考：<https://blog.csdn.net/qq_25615395/article/details/79316368>
 
@@ -1044,9 +1093,10 @@ begin
 end;
 ```
 
-2. 创建定时任务
-   - 看情况修改 存储过程名称、初次执行时间、循环执行时间
-   - job number 不用改
+##### 创建定时任务
+
+- 看情况修改 存储过程名称、初次执行时间、循环执行时间
+- job number 不用改
 
 ```sql
 declare
@@ -1056,19 +1106,37 @@ BEGIN
         JOB => job,  /*自动生成JOB_ID*/  
         WHAT => 'PROC_ZS_YJSE_RKRQ;',  /*需要执行的存储过程名称*/  
         NEXT_DATE => sysdate,  /*初次立即执行*/  
-        INTERVAL => 'ADD_MONTHS(trunc(sysdate,''yyyy''),12)+1/24' /*每年1月1日凌晨1点执行*/
+        INTERVAL => 'trunc(next_day(sysdate, 1)) + 2/24' /*每周日2点执行*/
       );  
   commit;
 end;
 ```
 
-3. 查看用户的定时器
+##### 查看用户的定时任务
 
 ```sql
-SELECT * FROM user_jobs;
+SELECT * FROM user_jobs ORDER BY JOB;
 ```
 
+##### 修改定时任务
 
+```sql
+-- 修改间隔时间
+begin
+  dbms_job.interval(223,'trunc(next_day(sysdate, 1))  + 2/24');
+  commit;
+end;
+```
+
+##### 删除定时任务
+
+```sql
+-- 移除某个定时任务     
+begin
+  dbms_job.remove(JOBID);
+  commit;
+end;
+```
 
 ### 回滚与恢复
 
