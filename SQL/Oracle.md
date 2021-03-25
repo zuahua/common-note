@@ -920,7 +920,7 @@ insert into 表名(字段1, 字段2, ...) values(值1, 值2, ...)
 表1和表2有相同 ***字段1***
 
 ```sql
--- 
+-- 表1(字段1) 后的 语句无括号
 INSERT INTO 表1(字段1) SELECT 字段1 FROM (SELECT DISTINCT 字段1 FROM 表2 ORDER BY 字段1 DESC);
 -- 从其他表拷贝 注意 value 无 s
 INSERT INTO 表1(字段) value(select 字段 from 表2)
