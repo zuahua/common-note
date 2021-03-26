@@ -371,7 +371,7 @@ SELECT r2.* FROM (SELECT r1.*,rownum xh FROM (SELECT ENAME, SAL, DEPTNO FROM EMP
 SELECT c.*, rowid FROM copy c ORDER BY deptno;
 ```
 
-<img src="F:\java\_note\common-note\resource\images\2.png" style="zoom:67%;" />
+<img src="..\resource\images\2.png" style="zoom:67%;" />
 
 - 删除重复记录，只保留 rowid 最小的记录
 
