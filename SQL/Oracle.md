@@ -142,6 +142,7 @@ rtrim(x, trim_str)    -- 把x右边截去trim_str，缺省trim_str截去右边�
 trim(x)              -- 去除两边空格
 replace(x, old, new ) -- 在x中查找old，并替换为new
 substr(x, start, length)    -- 截取字符，start为0或1都表示从第一个字符开始,截取长度为length
+wm_concat(列)  -- 将列值以 ',' 分隔起来，并显示成一行
 ```
 
 - 测试
@@ -160,6 +161,20 @@ SELECT REPLACE('zxcvbnabcki', 'abc', 'jjj') FROM DUAL; -- zxcvbnjjjki
 
 SELECT SUBSTR('123456789',1 , 5) FROM DUAL; -- 12345
 ```
+
+##### 字符拼接以0开头小数，0消失
+
+- to_char()
+
+- 小数前的数字代表最大位数
+- 个位为0表示：小数为 0.几的时候，保留 0
+- 小数点后为保留小数位数
+
+```sql
+to_char(值,'fm9999990.00')
+```
+
+
 
 ##### 数学函数
 
@@ -904,8 +919,6 @@ SELECT * FROM EMP WHERE DEPTNO=(SELECT DEPTNO FROM DEPT WHERE DNAME = 'ACCOUNTIN
 －－　查询工资在等级３的员工信息
 SELECT * FROM EMP WHERE SAL BETWEEN (SELECT LOSAL FROM SALGRADE WHERE GRADE = 3) AND (SELECT HISAL FROM SALGRADE WHERE GRADE = 3) 
 ```
-
-
 
 ### 插入相关
 
