@@ -15,5 +15,15 @@
 </mapper>
 ```
 
+### IDEA 常用快捷键
 
+|                 描述                  |            快捷键             |
+| :-----------------------------------: | :---------------------------: |
+|            查看类属性方法             |     Alt + 7  或 Alt + F12     |
+|            查看类继承结构             |           Ctrl + H            |
+| 生成代码(constructor、getter、setter) |           Ait + Ins           |
+|               try-catch               | Alt + Enter 或 Ctrl + Alt + T |
+|              格式化代码               |        Ctrl + Alt + L         |
+|             方法参数提示              |           Ctrl + P            |
+|            去除不需要的包             |        Ctrl + Alt + O         |
 
