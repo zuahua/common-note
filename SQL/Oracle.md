@@ -618,7 +618,7 @@ create table 表名 as select 字段列表 from 已有表 where 1!=1
 | CHAR()                       | CHAR 类型，定长字符串，会用空格填充来达到其最大长度。非 NULL 的 CHAR(12) 总是包含 12 字节信息。CHAR 字段最多可以存储 2,000 字节的信息。如果创建表时，不指定 CHAR 长度，则默认为 1。 |
 | VARCHAR2()                   | 变长字符串，与 CHAR 类型不同，它不会使用空格填充至最大长度。VARCHAR2 最多可以存储 4,000 字节的信息。 |
 | NVARCHAR2()                  | 这是一个包含 UNICODE 格式数据的变长字符串。 NVARCHAR2 最多可以存储 4,000字节的信息。 |
-| NUMBER(P,S)                  | P 是 Precision 的英文缩写，即精度缩写，表示有效数字的位数，最多不能超过 38 个有效数字。<br/>S 是 Scale 的英文缩写，表示小数点数字的位数。 |
+| NUMBER(P,S)                  | P 是 Precision 的英文缩写，即精度缩写，表示有效数字的位数，最多不能超过 38 个有效数字。<br/>S 是 Scale 的英文缩写，表示小数点数字的位数。:10^(-130) —— 10^126 |
 | INTEGER                      | INTEGER 是 NUMBER 的子类型，它等同于 NUMBER（38,0），用来存储整数。若插入、更新的数值有小数，则会被四舍五入。 |
 | BINARY_FLOAT                 | BINARY_FLOAT 是 32 位、 单精度浮点数字数据类型。可以支持至少 6 位精度,每个BINARY_FLOAT 的值需要 5 个字节，包括长度字节 |
 | BINARY_DOUBLE                | BINARY_DOUBLE 是为 64 位，双精度浮点数字数据类型。每个 BINARY_DOUBLE的值需要 9 个字节，包括长度字节。 |
