@@ -32,13 +32,35 @@
 
 ![](..\resource\images\4.png)
 
-
-
 ## 第二章 获取数据库连接
 
 ### 2.1 Driver 接口实现类
 
+- **url**
 
+```java
+jdbc:mysql://localhost:3306/test?characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowMultiQueries=true
+```
+
+#### 注意点
+
+##### 驱动版本
+
+- mysql-connector-java 5.0
+
+使用
+
+```java
+com.mysql.jdbc.Driver
+```
+
+- mysql-connector-java 8.0
+
+使用
+
+```java
+com.mysql.cj.jdbc.Driver
+```
 
 
 

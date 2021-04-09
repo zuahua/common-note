@@ -26,4 +26,5 @@
 |              格式化代码               |        Ctrl + Alt + L         |
 |             方法参数提示              |           Ctrl + P            |
 |            去除不需要的包             |        Ctrl + Alt + O         |
+|                 查类                  |       ctrl + shift + N        |
 
