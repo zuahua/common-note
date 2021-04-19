@@ -24,6 +24,9 @@ exit;
 sqlplus /nolog;  -- 启动sqlplus不登陆
 conn sys/密码 as sysdba; -- 通过超级管理员以dba的身份连接
 create tablespace 表空间名 datafile '文件路径\\文件名.dbf' size 空间大小; -- 创建表空间
+
+ALTER DATABASE DATAFILE '文件路径\\文件名.dbf' AUTOEXTEND ON NEXT 2048M MAXSIZE 20480M; -- 表空间自增
+
 create user 用户名 identified by 密码 default tablespace 表空间; -- 创建用户并指定表空间
 grant dba to 用户; -- 给用户授予dba权限，dba 最大权限
 ```
