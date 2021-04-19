@@ -62,7 +62,167 @@ com.mysql.jdbc.Driver
 com.mysql.cj.jdbc.Driver
 ```
 
+### 2.2 要素二 URL
 
+- JDBC URL 用于表示一个被注册的驱动程序
+
+- JDBC URL 组成
+
+  - jdbc:mysql://localhost:3306/test
+  - 协议:子协议 子名称
+
+
+
+### 2.3 用户名密码
+
+### 2.4 连接举例
+
+```java
+/**
+* 方式五：最终优化方式，将连接信息声明在配置文件下
+* 优点：
+* 1.数据与代码分离，解耦
+* 2.如果需要修改配置信息，可以避免重新打包
+*/
+@Test
+public void jdbc5() throws Exception {
+    // 从文件中读取
+    InputStream is = JdbcTest.class.getClassLoader().getResourceAsStream("jdbc.properties");
+
+    Properties pro = new Properties();
+    pro.load(is);
+
+    String user = pro.getProperty("user");
+    String pass = pro.getProperty("password");
+    String url = pro.getProperty("url");
+    String driver = pro.getProperty("driver-class-name");
+
+    // 加载驱动
+    Class.forName(driver);
+    // 可省略 因为 Driver 实现类 内部的静态代码块自己注册了
+    // Driver driver = (Driver) clazz.newInstance();
+    // DriverManager.registerDriver(driver);
+
+
+    Connection conn = DriverManager.getConnection(url, user, pass);
+    System.out.println(conn);
+}
+```
+
+## 第三章 使用PreparedStatement实现CRUD操作
+
+### 3.1 操作和访问数据库
+
+- java.sql包中有 3 个接口分别定义了对数据库调用的不同方式
+  - Statement：执行静态SQL
+  - PreparedStatement：SQL语句被预编译并存储在对象中，可以使用该对象多次高效调用
+  - CallableStatement：执行SQL存储过程
+
+![](..\resource\images\5.png)
+
+### 3.2 使用Statement弊端
+
+- 拼接SQL，注入问题
+- 需要区分字段大小写
+
+### 3.3 PreparedStatement 使用
+
+#### 封装JDBC连接 关闭 通用操作
+
+```java
+package com.zuahua1.util;
+
+import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Properties;
+
+/**
+ * 通用数据库 连接 关闭
+ *
+ * @author zhanghua
+ * @createTime 2021/4/19 17:26
+ */
+public class JDBCUtil {
+    /**
+     * 获取数据库连接
+     *
+     * @return conn
+     * @throws Exception
+     */
+    public static Connection getConnection() throws Exception {
+        Connection conn = null;
+        InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream("jdbc.properties");
+
+        Properties pro = new Properties();
+        pro.load(is);
+
+        String user = pro.getProperty("user");
+        String pass = pro.getProperty("password");
+        String url = pro.getProperty("url");
+        String driver = pro.getProperty("driver-class-name");
+        Class.forName(driver);
+        conn = DriverManager.getConnection(url, user, pass);
+        return conn;
+    }
+
+    /**
+     * 关闭数据库资源
+     *
+     * @param conn
+     * @param ps
+     */
+    public static void closeResource(Connection conn, Statement ps) {
+        try {
+            if (ps != null) {
+                ps.close();
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        try {
+            if (conn != null) {
+                conn.close();
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    }
+}
+```
+
+
+
+#### 增 删 改
+
+##### 增
+
+```java
+/**
+* 关闭数据库资源
+*
+* @param conn
+* @param ps
+*/
+public static void closeResource(Connection conn, Statement ps) {
+    try {
+        if (ps != null) {
+            ps.close();
+        }
+    } catch (SQLException throwables) {
+        throwables.printStackTrace();
+    }
+    try {
+        if (conn != null) {
+            conn.close();
+        }
+    } catch (SQLException throwables) {
+        throwables.printStackTrace();
+    }
+}
+```
 
 
 
