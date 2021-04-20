@@ -27,4 +27,5 @@
 |             方法参数提示              |           Ctrl + P            |
 |            去除不需要的包             |        Ctrl + Alt + O         |
 |                 查类                  |       ctrl + shift + N        |
+|             代码上下移动              |        SHIFT+ALT+上下         |
 
