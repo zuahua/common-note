@@ -30,7 +30,7 @@
 
 #### 1.5 JDBC 编写步骤
 
-![](..\resource\images\4.png)
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421163817.png)
 
 ## 第二章 获取数据库连接
 
@@ -73,7 +73,16 @@ com.mysql.cj.jdbc.Driver
 
 
 
-### 2.3 用户名密码
+### 2.3 用户名密码 jdbc.properties
+
+```properties
+user=root
+password=123456
+driver-class-name=com.mysql.cj.jdbc.Driver
+url=jdbc:mysql://localhost:3306/test?characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowMultiQueries=true
+```
+
+
 
 ### 2.4 连接举例
 
@@ -129,12 +138,14 @@ create table user(
   - PreparedStatement：SQL语句被预编译并存储在对象中，可以使用该对象多次高效调用
   - CallableStatement：执行SQL存储过程
 
-![](..\resource\images\5.png)
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421163853.png)
 
 ### 3.3 使用Statement弊端
 
 - 拼接SQL，注入问题
-- 需要区分字段大小写
+- 拼串 繁琐
+
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421163958.png)
 
 ### 3.4 PreparedStatement 使用
 
@@ -143,6 +154,8 @@ create table user(
 1. 不拼SQL字符串，解决SQL注入问题。
 2. 能操作Blob类型，而Statement不行。
 3. 高效的批量操作，只预编译SQL一次。
+
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421164043.png)
 
 #### 3.4.2 封装JDBC连接 关闭 通用操作
 
@@ -954,7 +967,7 @@ public void test() {
 }
 ```
 
-```powershell
+```shell
 输入用户名：
 1' or '
 输入密码：
@@ -1017,7 +1030,7 @@ public void test2() {
 }
 ```
 
-```powershell
+```shell
 输入用户名：
 '1' or '
 输入密码：
@@ -1029,7 +1042,7 @@ public void test2() {
 
 ### 3.6 Sql 类型 与 Java 类型对应关系
 
-![](..\resource\images\6.png)
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421163928.png)
 
 ### 3.7 JDBC API小结
 
@@ -1111,7 +1124,7 @@ public static void closeResource(Connection conn, Statement ps, ResultSet rs) {
 }
 ```
 
-#### 3.7.2 思想与技术
+#### 3.7.3 思想与技术
 
 - 两种思想
   - 面向接口编程思想
@@ -1124,6 +1137,482 @@ public static void closeResource(Connection conn, Statement ps, ResultSet rs) {
     - 获取列数  getColumnCount()
     - 获取别名  getColumnLabel()
   - 通过反射，创建指定类的对象，获取指定的属性并赋值
+
+### 3.8 接口补充
+
+#### PreparedStatement
+
+##### `ps.execute()`
+
+> Returns:
+> true if the first result is a ResultSet object; false if the first result is an update count or there is no result
+>
+> 查询时返回 **true**，增删改返回 **false**
+
+##### `ps.executeQuery()`
+
+> Returns:
+> a ResultSet object that contains the data produced by the query; never null
+>
+> 返回 **ResultSet**，不为 **null**
+
+##### `ps.executeUpdate()`
+
+> Returns:
+> either (1) the row count for SQL Data Manipulation Language (DML) statements or (2) 0 for SQL statements that return nothing
+>
+> 返回影像数据表的行数 int 
+
+##  第四章 PreparedStatement 操作 blob
+
+####  准备
+
+```sql
+alter table emploee modify photo mediumblob;
+```
+
+#### 写入 blob 字段 （图片）
+
+```java
+@Test
+public void insertBlob() {
+    Connection conn = null;
+    PreparedStatement ps = null;
+    FileInputStream fis = null;
+    try {
+        conn = JDBCUtil.getConnection();
+        String sql = "insert into emploee(name,password,birth,photo) values(?,?,?,?)";
+        ps = conn.prepareStatement(sql);
+        String name = "Faker";
+        String password = "123456";
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        Date birth = sdf.parse("1980-09-01");
+
+        ps.setString(1, name);
+        ps.setString(2, password);
+        ps.setDate(3, new java.sql.Date(birth.getTime()));
+
+        fis = new FileInputStream("pic.jpg");
+        ps.setBlob(4, fis);
+
+        int res = ps.executeUpdate();
+        if (res > 0) {
+            System.out.println("插入成功");
+        } else {
+            System.out.println("插入失败");
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        JDBCUtil.closeResource(conn, ps);
+        try {
+            if (fis != null) {
+                fis.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+}
+```
+
+#### 读取 blob 字段，保存为图片
+
+- Emploee Bean
+
+```java
+package com.zuahua1.bean;
+
+import java.sql.Blob;
+import java.sql.Date;
+
+/**
+ * @author zhanghua
+ * @createTime 2021/4/21 10:43
+ */
+public class Emploee {
+    private Integer id;
+    private String name;
+    private String password;
+    private Date birth;
+    private Blob photo;
+
+    public Emploee() {
+    }
+
+    public Emploee(Integer id, String name, String password, Date birth, Blob photo) {
+        this.id = id;
+        this.name = name;
+        this.password = password;
+        this.birth = birth;
+        this.photo = photo;
+    }
+
+    public Emploee(String name, String password, Date birth, Blob photo) {
+        this.name = name;
+        this.password = password;
+        this.birth = birth;
+        this.photo = photo;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public Date getBirth() {
+        return birth;
+    }
+
+    public void setBirth(Date birth) {
+        this.birth = birth;
+    }
+
+    public Blob getPhoto() {
+        return photo;
+    }
+
+    public void setPhoto(Blob photo) {
+        this.photo = photo;
+    }
+
+    @Override
+    public String toString() {
+        return "Emploee{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", password='" + password + '\'' +
+                ", birth=" + birth +
+                '}';
+    }
+}
+```
+
+
+
+```java
+@Test
+public void queryBlob() {
+    Connection conn = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+        conn = JDBCUtil.getConnection();
+        String sql = "select name,password,birth,photo from emploee where id = ?";
+        ps = conn.prepareStatement(sql);
+
+        ps.setInt(1, 3);
+
+        rs = ps.executeQuery();
+
+        if (rs.next()) {
+            String name = rs.getString("name");
+            String password = rs.getString("password");
+            java.sql.Date birth = rs.getDate("birth");
+            Blob photo = rs.getBlob("photo");
+            Emploee emploee = new Emploee(name, password, birth, photo);
+
+            System.out.println(emploee);
+
+            // 写出图片
+            FileOutputStream fos = new FileOutputStream("fos.jpg");
+            InputStream is = photo.getBinaryStream();
+            byte[] buffer = new byte[1024];
+            int len = 0;
+            while ((len = is.read(buffer)) != -1) {
+                fos.write(buffer, 0, len);
+            }
+
+            fos.close();
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        JDBCUtil.closeResource(conn, ps, rs);
+    }
+}
+```
+
+#### 注意 blob 与 Mysql 限制传入大小
+
+> Mysql 中 ***mediumblob*** 类型最大为 16M
+>
+> Mysql 服务 默认最大 1M
+
+使用大图片报错如下
+
+```powershell
+com.mysql.cj.jdbc.exceptions.PacketTooBigException: Packet for query is too large (4,733,455 > 4,194,304). You can change this value on the server by setting the 'max_allowed_packet' variable.
+```
+
+解决：
+
+mysql 数据 目录 **<u>my.ini</u>** 配置
+
+**<u>C:\ProgramData\MySQL\MySQL Server 5.7\my.ini</u>**
+
+```ini
+max_allowed_packet = 16M
+```
+
+## 第五章 PreparedStatement 批量操作
+
+#### 3.10.1 版本说明
+
+>***mysql-connector-java***  > 5.1.37
+
+#### 3.10.2 提高效率参数
+
+1. 设置连接不自动提交
+2. 使用批量操作 
+
+#### 3.10.3 测试
+
+```java
+/**
+* 批量插入操作
+*
+* @throws Exception
+*/
+@Test
+public void insertBatch() throws Exception {
+    long s = System.currentTimeMillis();
+
+    Connection conn = JDBCUtil.getConnection();
+    String sql = "insert into book(book_id,book_name,book_price) values(?,?,?)";
+    PreparedStatement ps = conn.prepareStatement(sql);
+
+    // 设置不自动提交
+    conn.setAutoCommit(false);
+
+    Random r = new Random();
+
+    for (int i = 0; i < 10000; i++) {
+        int nextInt = r.nextInt(10000);
+        int nextInt1 = r.nextInt(200);
+        ps.setString(1, String.valueOf(nextInt));
+        ps.setString(2, "book-name-" + i);
+        ps.setInt(3, nextInt1);
+
+        // 批量操作
+        ps.addBatch();
+
+        // 每1000条执行一次
+        //            if ((i + 1) % 1000 == 0) {
+        //                ps.executeBatch();
+        //                // 清空batch
+        //                ps.clearBatch();
+        //            }
+    }
+
+    // 一次性执行
+    ps.executeBatch();
+    ps.clearBatch();
+
+    // 提交
+    conn.commit();
+
+    JDBCUtil.closeResource(conn, ps);
+
+    long e = System.currentTimeMillis();
+    System.out.println("花费时间：" + (e - s));
+}
+```
+
+```sh
+花费时间：1003
+```
+
+## 第六章 数据库事务
+
+### 6.1 数据库事务介绍
+
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421164105.png)
+
+- 哪些操作会自动提交
+  - DDL 操作一旦执行，自动提交
+  - DML 默认自动提交
+    - set autocommit = false 取消自动提交
+  - 默认关闭连接时，自动提交
+
+### 6.2 JDBC 事务处理
+
+#### 介绍
+
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421164808.png)
+
+#### 表 准备
+
+```sql
+create table bank_user(
+	id int primary key auto_increment,
+	name varchar(10),
+	password varchar(40),
+	balance double 
+);
+
+insert into bank_user(name, password, balance) values('A', '123456', 1000);
+insert into bank_user(name, password, balance) values('B', '123456', 1000);
+```
+
+#### 满足事务的通用增删改
+
+```java
+/**
+* 通用增删改 version 2.0 考虑事务
+*
+* @param conn 连接
+* @param sql  SQL
+* @param args 占位符参数
+* @return
+*/
+public int commonUpdate(Connection conn, String sql, Object... args) {
+    PreparedStatement ps = null;
+    try {
+        ps = conn.prepareStatement(sql);
+
+        for (int i = 0; i < args.length; i++) {
+            ps.setObject(i + 1, args[i]);
+        }
+        return ps.executeUpdate();
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        JDBCUtil.closeResource(null, ps);
+    }
+    return -1;
+}
+```
+
+#### 事务测试
+
+```java
+/**
+* 事务需要避免以下操作：
+* 哪些操作会自动提交
+* - DDL 操作一旦执行，自动提交
+* - DML 默认自动提交
+* - set autocommit = false 取消自动提交
+* - 默认关闭连接时，自动提交
+* <p>
+* 模拟转账操作 A向B转账100 事务操作
+*/
+@Test
+public void commonUpdateWithTransactionTest() {
+    Connection conn = null;
+    try {
+        conn = JDBCUtil.getConnection();
+        // 设置不自动提交
+        conn.setAutoCommit(false);
+
+        // 操作1 A转账
+        String sqlA = "update bank_user set balance = balance - 100 where name = ?";
+        commonUpdate(conn, sqlA, "A");
+
+        // 模拟网络问题
+        System.out.println(1 / 0);
+
+        // 操作2 B收账
+        String sqlB = "update bank_user set balance = balance + 100 where name = ?";
+        commonUpdate(conn, sqlB, "B");
+
+        // 提交操作
+        conn.commit();
+        System.out.println("转账成功");
+    } catch (Exception e) {
+        e.printStackTrace();
+        // 回滚操作
+        try {
+            conn.rollback();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    } finally {
+        // 关闭连接前，设置为默认自动提交，主要是使用数据库连接池时需要注意
+        try {
+            conn.setAutoCommit(true);
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+        // 关闭连接
+        JDBCUtil.closeResource(conn, null);
+    }
+}
+```
+
+### 6.3 事务的 ACID 4 属性
+
+![image-20210421165415698](C:\Users\admin\AppData\Roaming\Typora\typora-user-images\image-20210421165415698.png)
+
+#### 6.3.1 数据库的并发问题
+
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421170018.png)
+
+>**<u>不可重复读</u>** 和 **<u>幻读</u>** 是可以接受的
+
+#### 6.3.2 四种隔离级别
+
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421171244.png)
+
+> 上表隔离级别从上往下：***一致性增强，并发性降低***
+>
+> 默认隔离级别下，Oracle并发性比Mysql好
+
+#### 6.3.3 在Mysql中设置隔离级别
+
+
+
+## 第七章 DAO 及其实现类
+
+### 【BaseDAO.java】
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

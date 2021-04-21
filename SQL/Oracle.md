@@ -31,7 +31,7 @@ create user 用户名 identified by 密码 default tablespace 表空间; -- 创�
 grant dba to 用户; -- 给用户授予dba权限，dba 最大权限
 ```
 
-![image](../resource/images/1.png)
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421163312.png)
 
 #### 约束
 
@@ -389,7 +389,7 @@ SELECT r2.* FROM (SELECT r1.*,rownum xh FROM (SELECT ENAME, SAL, DEPTNO FROM EMP
 SELECT c.*, rowid FROM copy c ORDER BY deptno;
 ```
 
-<img src="..\resource\images\2.png" style="zoom:67%;" />
+<img src="https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421163551.png" style="zoom:67%;" />
 
 - 删除重复记录，只保留 rowid 最小的记录
 
@@ -692,7 +692,7 @@ END;
 
 ##### 修改表结构
 
-![](../resource/images/3.png)
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421163736.png)
 
 #### 约束
 
