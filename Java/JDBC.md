@@ -905,7 +905,7 @@ Book{id=2, bookId='102402', bookName='福尔摩斯探案集', bookPrice=65}
 ##### 准备表
 
 ```sql
-create table emploee(
+create table employee(
 	id int PRIMARY KEY auto_increment,
 	name VARCHAR(10),
 	password VARCHAR(40),
@@ -913,8 +913,8 @@ create table emploee(
 	photo BLOB
 );
 
-INSERT INTO emploee(name, password, birth) values('XiaoMing', '123456', DATE('1990-01-01'));
-INSERT INTO emploee(name, password, birth) values('XiaoHong', '123456', DATE('1990-01-01'));
+INSERT INTO employee(name, password, birth) values('XiaoMing', '123456', DATE('1990-01-01'));
+INSERT INTO employee(name, password, birth) values('XiaoHong', '123456', DATE('1990-01-01'));
 ```
 
 ##### 使用 Statement测试SQL注入
@@ -936,10 +936,10 @@ public void test() {
     ResultSet rs = null;
     try {
         conn = JDBCUtil.getConnection();
-        // 注入sql: select id,name from emploee where name = '1' or 'and password' = '1' or '1'='1'
+        // 注入sql: select id,name from employee where name = '1' or 'and password' = '1' or '1'='1'
         // name = 1' or '
         // password = 1' or '1'='1
-        String sql = "select id,name from emploee where name = '" + name + "'" + " and password = '" + password + "'";
+        String sql = "select id,name from employee where name = '" + name + "'" + " and password = '" + password + "'";
         Statement statement = conn.createStatement();
         statement.execute(sql);
 
@@ -994,10 +994,10 @@ public void test2() {
     ResultSet rs = null;
     try {
         conn = JDBCUtil.getConnection();
-        // 注入sql: select id,name from emploee where name = '1' or ' and password = ' = '1' or 1=1
+        // 注入sql: select id,name from employee where name = '1' or ' and password = ' = '1' or 1=1
         // name = '1' or '
         // password = ' = '1' or 1=1
-        String sql = "select id,name from emploee where name = ? and password = ?";
+        String sql = "select id,name from employee where name = ? and password = ?";
         PreparedStatement ps = conn.prepareStatement(sql);
         ps.setString(1, name);
         ps.setString(2, password);
@@ -1168,7 +1168,7 @@ public static void closeResource(Connection conn, Statement ps, ResultSet rs) {
 ####  准备
 
 ```sql
-alter table emploee modify photo mediumblob;
+alter table employee modify photo mediumblob;
 ```
 
 #### 写入 blob 字段 （图片）
@@ -1181,7 +1181,7 @@ public void insertBlob() {
     FileInputStream fis = null;
     try {
         conn = JDBCUtil.getConnection();
-        String sql = "insert into emploee(name,password,birth,photo) values(?,?,?,?)";
+        String sql = "insert into employee(name,password,birth,photo) values(?,?,?,?)";
         ps = conn.prepareStatement(sql);
         String name = "Faker";
         String password = "123456";
@@ -1580,15 +1580,864 @@ public void commonUpdateWithTransactionTest() {
 
 #### 6.3.3 在Mysql中设置隔离级别
 
+####  6.3.4 在Jav中设置隔离级别
 
+##### 6.3.4.1 考虑事务的通用查询 返回一个数据
+
+```java
+/**
+     * 考虑事务的通用查询 返回一个数据 version 2.0
+     *
+     * @param conn  连接
+     * @param clazz clazz
+     * @param sql   SQL
+     * @param args  占位符参数
+     * @param <T>   表对应bean类
+     * @return <T> T
+     */
+public <T> T commonQuery(Connection conn, Class<T> clazz, String sql, Object... args) {
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    try {
+        ps = conn.prepareStatement(sql);
+        // 设置占位符
+        for (int i = 0; i < args.length; i++) {
+            ps.setObject(i + 1, args[i]);
+        }
+        // 执行
+        rs = ps.executeQuery();
+        // 获取 结果集元数据
+        ResultSetMetaData rsMetaData = rs.getMetaData();
+
+        // 处理结果集
+        if (rs.next()) {
+            T t = clazz.newInstance();
+            // 获取 结果集列数
+            int columnCount = rsMetaData.getColumnCount();
+            // 处理列值
+            for (int i = 0; i < columnCount; i++) {
+                // 获取 列名 推荐使用 columnLabel
+                String columnLabel = rsMetaData.getColumnLabel(i + 1);
+                // 列值
+                Object columnValue = rs.getObject(i + 1);
+                // 利用反射设置对象的字段值  根据字段名(字符串)去获取字段
+                Field declaredField = clazz.getDeclaredField(columnLabel);
+                declaredField.setAccessible(true);
+                declaredField.set(t, columnValue);
+            }
+            return t;
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        // 关闭资源
+        JDBCUtil.closeResource(conn, ps, rs);
+    }
+    return null;
+}
+```
+
+##### 6.3.4.2 测试 读未提交
+
+```java
+/**
+     * 测试修改连接的数据库隔离级别 读
+     */
+@Test
+public void transactionQueryTest() throws Exception {
+    Connection conn = JDBCUtil.getConnection();
+    // 设置隔离级别为读未提交
+    conn.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+    String sql = "select id,name,password,balance from bank_user where id = ?";
+    BankUser bankUser = commonQuery(conn, BankUser.class, sql, 1);
+    System.out.println(bankUser);
+}
+
+/**
+     * 测试修改连接的数据库隔离级别 更新
+     */
+@Test
+public void transactionUpdateTest() throws Exception {
+    Connection conn = JDBCUtil.getConnection();
+    // 设置不自动提交
+    conn.setAutoCommit(false);
+    // 设置隔离级别为读未提交
+    conn.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+    String sql = "update bank_user set balance=balance-100 where id = ?";
+    int i = commonUpdate(conn, sql, 1);
+    // 15s
+    Thread.sleep(15000);
+    //conn.commit();
+}
+```
+
+首先运行（读）  ` transactionQueryTest()`
+
+```shell
+BankUser{id=1, name='A', password='123456', balance=700.0}
+```
+
+再运行（更新）`transactionUpdateTest()`
+
+在 `Thread.sleep(15000)` 时间内再次运行（读）  ` transactionQueryTest()`
+
+```shell
+BankUser{id=1, name='A', password='123456', balance=600.0}
+```
+
+在 （更新）`transactionUpdateTest()` 线程结束后，再次运行（读）  ` transactionQueryTest()`
+
+```shell
+BankUser{id=1, name='A', password='123456', balance=700.0}
+```
 
 ## 第七章 DAO 及其实现类
 
 ### 【BaseDAO.java】
 
+- 通用增删改
+- 通用查询（返回一个数据）
+- 通用查询（返回多个数据）
+- 通用单个特殊值查询
+
+```java
+package com.zuahua1.dao;
+
+import com.zuahua1.util.JDBCUtil;
+
+import java.lang.reflect.Field;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author zhanghua
+ * @createTime 2021/4/22 11:34
+ */
+public abstract class BaseDAO {
+    /**
+     * 考虑事务的通用查询 返回一个数据 version 2.0
+     *
+     * @param conn  连接
+     * @param clazz clazz
+     * @param sql   SQL
+     * @param args  占位符参数
+     * @param <T>   表对应bean类
+     * @return <T> T
+     */
+    public <T> T commonQuery(Connection conn, Class<T> clazz, String sql, Object... args) {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            ps = conn.prepareStatement(sql);
+            // 设置占位符
+            for (int i = 0; i < args.length; i++) {
+                ps.setObject(i + 1, args[i]);
+            }
+            // 执行
+            rs = ps.executeQuery();
+            // 获取 结果集元数据
+            ResultSetMetaData rsMetaData = rs.getMetaData();
+
+            // 处理结果集
+            if (rs.next()) {
+                T t = clazz.newInstance();
+                // 获取 结果集列数
+                int columnCount = rsMetaData.getColumnCount();
+                // 处理列值
+                for (int i = 0; i < columnCount; i++) {
+                    // 获取 列名 推荐使用 columnLabel
+                    String columnLabel = rsMetaData.getColumnLabel(i + 1);
+                    // 列值
+                    Object columnValue = rs.getObject(i + 1);
+                    // 利用反射设置对象的字段值  根据字段名(字符串)去获取字段
+                    Field declaredField = clazz.getDeclaredField(columnLabel);
+                    declaredField.setAccessible(true);
+                    declaredField.set(t, columnValue);
+                }
+                return t;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // 关闭资源
+            JDBCUtil.closeResource(null, ps, rs);
+        }
+        return null;
+    }
+
+    /**
+     * 通用查询 返回结果列表 考虑事务 version 2.0
+     *
+     * @param clazz clazz
+     * @param sql   SQL
+     * @param args  占位符参数
+     * @param <T>   表对应bean类
+     * @return <T> T
+     */
+    public <T> List<T> commonQueryList(Connection conn, Class<T> clazz, String sql, Object... args) {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            ps = conn.prepareStatement(sql);
+            // 设置占位符
+            for (int i = 0; i < args.length; i++) {
+                ps.setObject(i + 1, args[i]);
+            }
+            // 执行
+            rs = ps.executeQuery();
+            // 获取 结果集元数据
+            ResultSetMetaData rsMetaData = rs.getMetaData();
+            ArrayList<T> list = new ArrayList<>();
+            // 处理结果集
+            while (rs.next()) {
+                T t = clazz.newInstance();
+                // 获取 结果集列数
+                int columnCount = rsMetaData.getColumnCount();
+                // 处理列值
+                for (int i = 0; i < columnCount; i++) {
+                    // 获取 列名 推荐使用 columnLabel
+                    String columnLabel = rsMetaData.getColumnLabel(i + 1);
+                    // 列值
+                    Object columnValue = rs.getObject(i + 1);
+                    // 利用反射设置对象的字段值  根据字段名(字符串)去获取字段
+                    Field declaredField = clazz.getDeclaredField(columnLabel);
+                    declaredField.setAccessible(true);
+                    declaredField.set(t, columnValue);
+                }
+                list.add(t);
+            }
+            return list;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // 关闭资源
+            JDBCUtil.closeResource(null, ps, rs);
+        }
+        return null;
+    }
+
+    /**
+     * 通用增删改 version 2.0 考虑事务
+     *
+     * @param conn 连接
+     * @param sql  SQL
+     * @param args 占位符参数
+     * @return
+     */
+    public int commonUpdate(Connection conn, String sql, Object... args) {
+        PreparedStatement ps = null;
+        try {
+            ps = conn.prepareStatement(sql);
+
+            for (int i = 0; i < args.length; i++) {
+                ps.setObject(i + 1, args[i]);
+            }
+            return ps.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            JDBCUtil.closeResource(null, ps);
+        }
+        return -1;
+    }
+
+    /**
+     * 用于查询特殊值的通用方法
+     *
+     * @param conn
+     * @param sql
+     * @param args
+     * @param <E>
+     * @return
+     */
+    public <E> E getValue(Connection conn, String sql, Object... args) {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            ps = conn.prepareStatement(sql);
+            for (int i = 0; i < args.length; i++) {
+                ps.setObject(i + 1, args[i]);
+            }
+            ps.executeQuery();
+            rs = ps.getResultSet();
+
+            if (rs.next()) {
+                return (E) rs.getObject(1);
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } finally {
+            JDBCUtil.closeResource(conn, ps, rs);
+        }
+        return null;
+    }
+}
+```
+
+### 【EmployeeDAO.java】
+
+```java
+package com.zuahua1.dao;
+
+import com.zuahua1.bean.Employee;
+
+import java.sql.Connection;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * @author zhanghua
+ * @createTime 2021/4/22 11:55
+ */
+public interface EmployeeDAO {
+    /**
+     * 插入数据
+     *
+     * @param conn
+     * @param emploee
+     */
+    void insert(Connection conn, Employee emploee);
+
+    /**
+     * 通过id删除
+     *
+     * @param conn
+     * @param id
+     */
+    void deleteById(Connection conn, int id);
+
+    /**
+     * 通过id更新
+     *
+     * @param conn
+     * @param emploee
+     */
+    void update(Connection conn, Employee emploee);
+
+    /**
+     * 通过id查询
+     *
+     * @param conn
+     * @param id
+     * @return
+     */
+    Employee getEmployeeById(Connection conn, int id);
+
+    /**
+     * 获取所有数据
+     *
+     * @param conn
+     * @return
+     */
+    List<Employee> getAll(Connection conn);
+
+    /**
+     * 获取行数
+     *
+     * @param conn
+     * @return
+     */
+    Long getCount(Connection conn);
+
+    /**
+     * 获取最大生日
+     *
+     * @param conn
+     * @return
+     */
+    Date getMaxBirth(Connection conn);
+}
+```
+
+### 【EmployeeDAOImpl.java】
+
+```java
+package com.zuahua1.dao;
+
+import com.zuahua1.bean.Employee;
+import com.zuahua1.util.JDBCUtil;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * @author zhanghua
+ * @createTime 2021/4/22 13:22
+ */
+public class EmployeeDAOImpl extends BaseDAO implements EmployeeDAO {
+    @Override
+    public void insert(Connection conn, Employee employee) {
+        String sql = "insert into employee(name,password,birth,photo) values(?,?,?,?)";
+        commonUpdate(conn, sql, employee.getName(), employee.getPassword(), employee.getBirth(), employee.getPhoto());
+    }
+
+    @Override
+    public void deleteById(Connection conn, int id) {
+        String sql = "delete from employee where id = ?";
+        commonUpdate(conn, sql, id);
+    }
+
+    @Override
+    public void update(Connection conn, Employee employee) {
+        String sql = "update employee set name=?,password=?,birth=? where id = ?";
+        commonUpdate(conn, sql, employee.getName(), employee.getPassword(), employee.getBirth(), employee.getId());
+    }
+
+    @Override
+    public Employee getEmployeeById(Connection conn, int id) {
+        String sql = "select id,name,password,birth from employee where id = ?";
+        Employee employee = commonQuery(conn, Employee.class, sql, id);
+        return employee;
+    }
+
+    @Override
+    public List<Employee> getAll(Connection conn) {
+        String sql = "select id,name,password,birth from employee";
+        List<Employee> employeeList = commonQueryList(conn, Employee.class, sql);
+        return employeeList;
+    }
+
+    @Override
+    public Long getCount(Connection conn) {
+        String sql = "select count(*) from employee";
+        Long count = getValue(conn, sql);
+        JDBCUtil.closeResource(conn, null);
+        return count;
+    }
+
+    @Override
+    public Date getMaxBirth(Connection conn) {
+        String sql = "select birth from employee order by birth desc limit 1";
+        return (Date) getValue(conn, sql);
+    }
+}
+```
+
+### 测试【EmployeeDAOImplTest.java】
+
+```java
+package com.zuahua1.junit;
+
+import com.zuahua1.bean.Employee;
+import com.zuahua1.dao.EmployeeDAOImpl;
+import com.zuahua1.util.JDBCUtil;
+import org.junit.jupiter.api.Test;
+
+import java.sql.Connection;
+import java.sql.Date;
+import java.util.List;
+
+/**
+ * @author zhanghua
+ * @createTime 2021/4/23 15:22
+ */
+class EmployeeDAOImplTest {
+    EmployeeDAOImpl dao = new EmployeeDAOImpl();
+
+    @Test
+    void insert() {
+        Connection conn = null;
+        try {
+            conn = JDBCUtil.getConnection();
+            dao.insert(conn, new Employee(null, "Tname", "123456", new Date(345678L), null));
+            System.out.println("插入成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            JDBCUtil.closeResource(conn, null);
+        }
+    }
+
+    @Test
+    void deleteById() {
+        Connection conn = null;
+        try {
+            conn = JDBCUtil.getConnection();
+            dao.deleteById(conn, 1);
+            System.out.println("删除成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            JDBCUtil.closeResource(conn, null);
+        }
+    }
+
+    @Test
+    void update() {
+        Connection conn = null;
+        try {
+            conn = JDBCUtil.getConnection();
+            Employee employee = new Employee(5, "Bx", null, new Date(888888L), null);
+            dao.update(conn, employee);
+            System.out.println("更新成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            JDBCUtil.closeResource(conn, null);
+        }
+    }
+
+    @Test
+    void getEmploeeById() {
+        Connection conn = null;
+        try {
+            conn = JDBCUtil.getConnection();
+            Employee employee = dao.getEmployeeById(conn, 5);
+            System.out.println(employee);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            JDBCUtil.closeResource(conn, null);
+        }
+    }
+
+    @Test
+    void getAll() {
+        Connection conn = null;
+        try {
+            conn = JDBCUtil.getConnection();
+            List<Employee> employeeList = dao.getAll(conn);
+            for (Employee e : employeeList) {
+                System.out.println(e);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            JDBCUtil.closeResource(conn, null);
+        }
+    }
+
+    @Test
+    void getCount() {
+        Connection conn = null;
+        try {
+            conn = JDBCUtil.getConnection();
+            Long count = dao.getCount(conn);
+            System.out.println(count);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            JDBCUtil.closeResource(conn, null);
+        }
+    }
+
+    @Test
+    void getMaxBirth() {
+        Connection conn = null;
+        try {
+            conn = JDBCUtil.getConnection();
+            java.util.Date birth = dao.getMaxBirth(conn);
+            System.out.println(birth);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            JDBCUtil.closeResource(conn, null);
+        }
+    }
+}
+```
+
+### 优化 DAO 及其 DAOImpl
+
+> `EmployeeDAOImpl.java`中 调用通用查询方法时，都使用了 `Employee.class`参数
+>
+> 现在希望去掉 `Employee.class` 参数，使用 `泛型`的方式，`BaseDAO.java`  改造成 `泛型类`
+>
+> 在 实例化 `EmployeeDAOImpl`类时，需要获取到 `父类的泛型`
+
+#### BaseDAO.java
+
+```java
+package com.zuahua1.dao.yh;
+
+import com.zuahua1.util.JDBCUtil;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author zhanghua
+ * @createTime 2021/4/22 11:34
+ */
+public abstract class BaseDAO<T> {
+    private Class<T> clazz = null;
+
+    {
+        Type genericSuperclass = this.getClass().getGenericSuperclass();
+        ParameterizedType paramType = (ParameterizedType) genericSuperclass;
+        Type[] types = paramType.getActualTypeArguments();
+        clazz = (Class<T>) types[0];
+    }
+
+    /**
+     * 考虑事务的通用查询 返回一个数据 version 2.0
+     *
+     * @param conn 连接
+     * @param sql  SQL
+     * @param args 占位符参数
+     * @return  T
+     */
+    public T commonQuery(Connection conn, String sql, Object... args) {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            ps = conn.prepareStatement(sql);
+            // 设置占位符
+            for (int i = 0; i < args.length; i++) {
+                ps.setObject(i + 1, args[i]);
+            }
+            // 执行
+            rs = ps.executeQuery();
+            // 获取 结果集元数据
+            ResultSetMetaData rsMetaData = rs.getMetaData();
+
+            // 处理结果集
+            if (rs.next()) {
+                T t = clazz.newInstance();
+                // 获取 结果集列数
+                int columnCount = rsMetaData.getColumnCount();
+                // 处理列值
+                for (int i = 0; i < columnCount; i++) {
+                    // 获取 列名 推荐使用 columnLabel
+                    String columnLabel = rsMetaData.getColumnLabel(i + 1);
+                    // 列值
+                    Object columnValue = rs.getObject(i + 1);
+                    // 利用反射设置对象的字段值  根据字段名(字符串)去获取字段
+                    Field declaredField = clazz.getDeclaredField(columnLabel);
+                    declaredField.setAccessible(true);
+                    declaredField.set(t, columnValue);
+                }
+                return t;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // 关闭资源
+            JDBCUtil.closeResource(null, ps, rs);
+        }
+        return null;
+    }
+
+    /**
+     * 通用查询 返回结果列表 考虑事务 version 2.0
+     *
+     * @param sql  SQL
+     * @param args 占位符参数
+     * @return  T
+     */
+    public List<T> commonQueryList(Connection conn, String sql, Object... args) {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            ps = conn.prepareStatement(sql);
+            // 设置占位符
+            for (int i = 0; i < args.length; i++) {
+                ps.setObject(i + 1, args[i]);
+            }
+            // 执行
+            rs = ps.executeQuery();
+            // 获取 结果集元数据
+            ResultSetMetaData rsMetaData = rs.getMetaData();
+            ArrayList<T> list = new ArrayList<>();
+            // 处理结果集
+            while (rs.next()) {
+                T t = clazz.newInstance();
+                // 获取 结果集列数
+                int columnCount = rsMetaData.getColumnCount();
+                // 处理列值
+                for (int i = 0; i < columnCount; i++) {
+                    // 获取 列名 推荐使用 columnLabel
+                    String columnLabel = rsMetaData.getColumnLabel(i + 1);
+                    // 列值
+                    Object columnValue = rs.getObject(i + 1);
+                    // 利用反射设置对象的字段值  根据字段名(字符串)去获取字段
+                    Field declaredField = clazz.getDeclaredField(columnLabel);
+                    declaredField.setAccessible(true);
+                    declaredField.set(t, columnValue);
+                }
+                list.add(t);
+            }
+            return list;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // 关闭资源
+            JDBCUtil.closeResource(null, ps, rs);
+        }
+        return null;
+    }
+
+    /**
+     * 通用增删改 version 2.0 考虑事务
+     *
+     * @param conn 连接
+     * @param sql  SQL
+     * @param args 占位符参数
+     * @return
+     */
+    public int commonUpdate(Connection conn, String sql, Object... args) {
+        PreparedStatement ps = null;
+        try {
+            ps = conn.prepareStatement(sql);
+
+            for (int i = 0; i < args.length; i++) {
+                ps.setObject(i + 1, args[i]);
+            }
+            return ps.executeUpdate();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            JDBCUtil.closeResource(null, ps);
+        }
+        return -1;
+    }
+
+    /**
+     * 用于查询特殊值的通用方法
+     *
+     * @param conn
+     * @param sql
+     * @param args
+     * @param <E>
+     * @return
+     */
+    public <E> E getValue(Connection conn, String sql, Object... args) {
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+        try {
+            ps = conn.prepareStatement(sql);
+            for (int i = 0; i < args.length; i++) {
+                ps.setObject(i + 1, args[i]);
+            }
+            ps.executeQuery();
+            rs = ps.getResultSet();
+
+            if (rs.next()) {
+                return (E) rs.getObject(1);
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } finally {
+            JDBCUtil.closeResource(conn, ps, rs);
+        }
+        return null;
+    }
+}
+```
+
+#### EmployeeDAOImpl.java
+
+```java
+package com.zuahua1.dao.yh;
+
+import com.zuahua1.bean.Employee;
+import com.zuahua1.util.JDBCUtil;
+
+import java.sql.Connection;
+import java.util.Date;
+import java.util.List;
+
+/**
+ * @author zhanghua
+ * @createTime 2021/4/22 13:22
+ */
+public class EmployeeDAOImpl extends BaseDAO<Employee> implements EmployeeDAO {
+    @Override
+    public void insert(Connection conn, Employee employee) {
+        String sql = "insert into employee(name,password,birth,photo) values(?,?,?,?)";
+        commonUpdate(conn, sql, employee.getName(), employee.getPassword(), employee.getBirth(), employee.getPhoto());
+    }
+
+    @Override
+    public void deleteById(Connection conn, int id) {
+        String sql = "delete from employee where id = ?";
+        commonUpdate(conn, sql, id);
+    }
+
+    @Override
+    public void update(Connection conn, Employee employee) {
+        String sql = "update employee set name=?,password=?,birth=? where id = ?";
+        commonUpdate(conn, sql, employee.getName(), employee.getPassword(), employee.getBirth(), employee.getId());
+    }
+
+    @Override
+    public Employee getEmployeeById(Connection conn, int id) {
+        String sql = "select id,name,password,birth from employee where id = ?";
+        Employee employee = commonQuery(conn, sql, id);
+        return employee;
+    }
+
+    @Override
+    public List<Employee> getAll(Connection conn) {
+        String sql = "select id,name,password,birth from employee";
+        List<Employee> employeeList = commonQueryList(conn, sql);
+        return employeeList;
+    }
+
+    @Override
+    public Long getCount(Connection conn) {
+        String sql = "select count(*) from employee";
+        Long count = getValue(conn, sql);
+        JDBCUtil.closeResource(conn, null);
+        return count;
+    }
+
+    @Override
+    public Date getMaxBirth(Connection conn) {
+        String sql = "select birth from employee order by birth desc limit 1";
+        return (Date) getValue(conn, sql);
+    }
+}
+```
+
+## 第八章 数据库连接池
+
+### 8.1 数据库连接池的必要性
+
+<img src="https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210423171957.png" style="zoom:150%;" />![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210423172752.png)
+
+### 8.2 数据库连接池技术
+
+<img src="https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210423171957.png" style="zoom:150%;" />![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210423172752.png)
+
+- 工作原理
+
+<img src="https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210423173114.png" style="zoom:150%;" />
+
+- 数据库连接池的优点
+
+<img src="https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210423173242.png" style="zoom:150%;" />
 
 
 
+### 8.3 多种开源数据库连接池
+
+<img src="https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210423173605.png" style="zoom:150%;" />
+
+
+
+#### 8.3.1 C3P0 数据库连接池
+
+
+
+#### 8.3.2 DBCP 数据库连接池
+
+
+
+#### 8.3.3 Druid 数据库连接池
+
+
+
+## 第九章 Apache-DBUtils 实现 CRUD 操作
 
 
 
