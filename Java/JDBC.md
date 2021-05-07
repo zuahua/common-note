@@ -1562,7 +1562,7 @@ public void commonUpdateWithTransactionTest() {
 
 ### 6.3 事务的 ACID 4 属性
 
-![image-20210421165415698](C:\Users\admin\AppData\Roaming\Typora\typora-user-images\image-20210421165415698.png)
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421165401.png)
 
 #### 6.3.1 数据库的并发问题
 
