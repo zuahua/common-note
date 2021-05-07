@@ -2427,47 +2427,532 @@ public class EmployeeDAOImpl extends BaseDAO<Employee> implements EmployeeDAO {
 
 #### 8.3.1 C3P0 数据库连接池
 
+##### 8.3.1.1 文档、依赖
+
+> 文档地址： <https://www.mchange.com/projects/c3p0/>
+>
+> Maven地址：<https://mvnrepository.com/artifact/com.mchange/c3p0/0.9.5>
+
+依赖：
+
+```xml
+<!-- https://mvnrepository.com/artifact/com.mchange/c3p0 -->
+<dependency>
+    <groupId>com.mchange</groupId>
+    <artifactId>c3p0</artifactId>
+    <version>0.9.5</version>
+</dependency>
+
+##### 8.3.1.2 C3P0连接数据库
+
+###### 方式一:手写配置
+
+```java
+@Test
+public void c3p0Test() throws Exception {
+    // 获取c3p0数据库连接池
+    ComboPooledDataSource cpds = new ComboPooledDataSource();
+    cpds.setDriverClass("com.mysql.cj.jdbc.Driver"); //loads the jdbc driver
+    cpds.setJdbcUrl("jdbc:mysql://localhost:3306/test?characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowMultiQueries=true");
+    cpds.setUser("root");
+    cpds.setPassword("123456");
+
+    // 设置相关参数，对数据库连接池进行管理
+    // 设置初始池大小
+    cpds.setInitialPoolSize(10);
+
+    Connection conn = cpds.getConnection();
+    System.out.println(conn);
+
+    // cpds.close();
+    // DataSources.destroy(cpds);
+}
+```
+
+###### 方式二：xml配置文件方式
+
+```java
+@Test
+public void c3p0Test2() throws Exception {
+    ComboPooledDataSource cpds = new ComboPooledDataSource("hello-c3p0");
+    Connection conn = cpds.getConnection();
+    System.out.println(conn);
+}
+```
+
+`c3p0-config.xml` 文件：
+
+```xml
+<?xml version="1.0" encoding="utf-8" ?>
+<c3p0-config>
+  <named-config name="hello-c3p0">
+    <!--提供连接的4个基本信息-->
+    <property name="com.mysql.cj.jdbc.Driver">5</property>
+    <property name="jdbcUrl">jdbc:mysql://localhost:3306/test?characterEncoding=utf8&amp;serverTimezone=Asia/Shanghai&amp;useSSL=false&amp;allowMultiQueries=true</property>
+    <property name="user">root</property>
+    <property name="password">123456</property>
+
+    <!-- 数据库连接池管理 基本信息 -->
+    <!-- 当数据库连接池中连接数不够时，一次性向数据库服务器申请的连接数 -->
+    <property name="acquireIncrement">5</property>
+    <!-- 初始化池的可连接数 -->
+    <property name="initialPoolSize">10</property>
+    <!-- 维护的最小可连接数 -->
+    <property name="minPoolSize">10</property>
+    <!-- 维护的最大可连接数 -->
+    <property name="maxPoolSize">100</property>
+    <!-- 最多维护的Statement的个数 -->
+    <property name="maxStatements">50</property>
+    <!-- 每个连接最多维护的Statement的个数 -->
+    <property name="maxStatementsPerConnection">5</property>
+  </named-config>
+</c3p0-config>
+```
+
+##### 8.3.1.3 JDBCUtil  C3P0
+
+`JDBCUtil.java` 中添加 获取C3P0通用连接
+
+```java
+private static ComboPooledDataSource cpds = new ComboPooledDataSource("hello-c3p0");
+
+/**
+* 获取C3P0连接
+*
+* @return conn
+* @throws Exception e
+*/
+public static Connection getC3P0Connection() throws Exception {
+    Connection conn = cpds.getConnection();
+    return conn;
+}
+```
+
 
 
 #### 8.3.2 DBCP 数据库连接池
 
+##### 8.3.2.1 文档与Maven
 
+> 文档：<https://javadoc.io/doc/commons-dbcp/commons-dbcp/1.4/org/apache/commons/dbcp/package-summary.html>
+>
+> Maven：<https://mvnrepository.com/artifact/commons-dbcp/commons-dbcp/1.4>
+
+依赖：
+
+```xml
+<!-- https://mvnrepository.com/artifact/commons-dbcp/commons-dbcp -->
+<dependency>
+    <groupId>commons-dbcp</groupId>
+    <artifactId>commons-dbcp</artifactId>
+    <version>1.4</version>
+</dependency>
+
+<!-- https://mvnrepository.com/artifact/commons-pool/commons-pool -->
+<dependency>
+    <groupId>commons-pool</groupId>
+    <artifactId>commons-pool</artifactId>
+    <version>1.5.5</version>
+</dependency>
+```
+
+##### 8.3.2.2 DBCP 连接
+
+###### 方式一：写死配置
+
+```java
+@Test
+public void dbcpGetConnection() throws Exception {
+    // 获取dbcp数据库连接池
+    BasicDataSource source = new BasicDataSource();
+
+    // 设置4个基本信息
+    source.setDriverClassName("com.mysql.cj.jdbc.Driver");
+    source.setUrl("jdbc:mysql://localhost:3306/test?characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowMultiQueries=true");
+    source.setUsername("root");
+    source.setPassword("123456");
+
+    // 设置数据库连接池的管理参数
+    source.setInitialSize(10);
+    source.setMaxActive(10);
+    // ...
+
+    // 获取连接
+    Connection conn = source.getConnection();
+
+    System.out.println(conn);
+}
+```
+
+###### 方式二：配置文件方式
+
+```java
+@Test
+public void getDBCPConnection2() throws Exception {
+    // 获取配置文件流
+    InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream("dbcp.properties");
+    // 加载流
+    Properties prop = new Properties();
+    prop.load(is);
+    // 连接池
+    DataSource source = BasicDataSourceFactory.createDataSource(prop);
+
+    // 获取连接
+    Connection conn = source.getConnection();
+
+    System.out.println(conn);
+}
+```
+
+`dbcp.properties` 文件
+
+```properties
+username=root
+password=123456
+driverClassName=com.mysql.cj.jdbc.Driver
+url=jdbc:mysql://localhost:3306/test?characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowMultiQueries=true
+initialSize=10
+maxActive=10
+```
+
+##### 8.3.2.3 JDBCUtil.java 获取 DBCP 连接
+
+```java
+private static DataSource source;
+
+static {
+    try {
+        // 获取配置文件流
+        InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream("dbcp.properties");
+        // 加载流
+        Properties prop = new Properties();
+        prop.load(is);
+        // 连接池
+        source = BasicDataSourceFactory.createDataSource(prop);
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+
+/**
+     * 获取DBCP连接
+     * @return
+     * @throws Exception
+     */
+public static Connection getDBCPConnection() throws Exception {
+    // 获取连接
+    Connection conn = source.getConnection();
+    return conn;
+}
+```
 
 #### 8.3.3 Druid 数据库连接池
+
+##### 8.3.3.1 文档、依赖
+
+> 文档：<https://github.com/alibaba/druid/wiki/%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98>
+>
+> Maven：<https://mvnrepository.com/artifact/com.alibaba/druid/1.1.10>
+
+```xml
+<!-- https://mvnrepository.com/artifact/com.alibaba/druid -->
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>druid</artifactId>
+    <version>1.1.10</version>
+</dependency>
+```
+
+##### 8.3.3.2 配置信息
+
+> 注意：jdbcUrl在配置中为名为 `url`
+
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210507105704.png)
+
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210507105745.png)
+
+![image-20210507105849595](C:\Users\admin\AppData\Roaming\Typora\typora-user-images\image-20210507105849595.png)
+
+> 图源：<https://blog.csdn.net/yunnysunny/article/details/8657095>
+
+##### 8.3.3.3 Druid获取连接
+
+###### 配置文件方式
+
+```java
+@Test
+public void getDruidConnection() throws Exception {
+    InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream("druid.properties");
+    Properties prop = new Properties();
+    prop.load(is);
+
+    DataSource dataSource = DruidDataSourceFactory.createDataSource(prop);
+    Connection conn = dataSource.getConnection();
+
+    System.out.println(conn);
+}
+```
+
+配置文件：`druid.properties`
+
+```properties
+username=root
+password=123456
+driverClassName=com.mysql.cj.jdbc.Driver
+url=jdbc:mysql://localhost:3306/test?characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowMultiQueries=true
+
+initialSize=10
+maxActive=20
+```
+
+##### 8.3.3.4JdbcUtil.java
+
+```java
+private static DataSource dataSource = null;
+
+static {
+    try {
+        InputStream is = ClassLoader.getSystemClassLoader().getResourceAsStream("druid.properties");
+        Properties prop = new Properties();
+        prop.load(is);
+
+        dataSource = DruidDataSourceFactory.createDataSource(prop);
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+
+/**
+     * 获取Druid连接
+     * @return conn
+     * @throws Exception e
+     */
+public static Connection getDruidConnection() throws Exception {
+    Connection conn = dataSource.getConnection();
+    return conn;
+}
+```
 
 
 
 ## 第九章 Apache-DBUtils 实现 CRUD 操作
 
+### 9.1 Apache-DBUtils介绍
+
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210507113159.png)
 
 
 
+###  9.2文档、Maven
+
+>文档：<https://commons.apache.org/proper/commons-dbutils/apidocs/>
+>
+>Maven：<https://mvnrepository.com/artifact/commons-dbutils/commons-dbutils>
+
+### 9.3 测试
+
+#### 9.3.1 update：增删改
+
+```java
+@Test
+public void updateTest() {
+    Connection conn = null;
+    try {
+        conn = JDBCUtil.getDruidConnection();
+
+        QueryRunner queryRunner = new QueryRunner();
+        String sql = "insert into employee(name,password,birth) values(?,?,?)";
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        Date parse = sdf.parse("1991-01-11");
+
+        int count = queryRunner.update(conn, sql, "vvvv", "qqqqqqq", new java.sql.Date(parse.getTime()));
+        System.out.println("插入" + count + "条数据");
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        JDBCUtil.closeResource(conn, null);
+    }
+}
+```
 
 
 
+#### 9.3.2 查
+
+##### 9.3.2.1 查的结果为实体类相关
+
+结果集，ResultSetHandler的实现类包括
+
+- BeanHandler
+- BeanListHandler
+- MapHandler
+- MapListHandler
+- ...
+
+```java
+/**
+     * BeanHandler：ResultSetHandler的实现类，对应实体类
+     *
+     * @throws Exception e
+     */
+@Test
+public void queryTest1() {
+    Connection conn = null;
+    try {
+        conn = JDBCUtil.getDruidConnection();
+
+        QueryRunner queryRunner = new QueryRunner();
+        String sql = "select * from employee where id = ?";
+
+        BeanHandler<Employee> handler = new BeanHandler<>(Employee.class);
+        Employee employee = queryRunner.query(conn, sql, handler, 5);
+        System.out.println(employee);
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        JDBCUtil.closeResource(conn, null);
+    }
+}
+
+/**
+     * BeanListHandler：ResultSetHandler的实现类，对应实体类List
+     *
+     * @throws Exception e
+     */
+@Test
+public void queryTest2() {
+    Connection conn = null;
+    try {
+        conn = JDBCUtil.getDruidConnection();
+
+        QueryRunner queryRunner = new QueryRunner();
+        String sql = "select id,name,password,birth from employee where id < ?";
+
+        BeanListHandler<Employee> handler = new BeanListHandler<>(Employee.class);
+        List<Employee> employeeList = queryRunner.query(conn, sql, handler, 5);
+        employeeList.forEach(System.out::println);
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        JDBCUtil.closeResource(conn, null);
+    }
+}
+```
 
 
 
+##### 9.3.2.2 查单个特殊值
 
+- ScalarHandler
 
+```java
+/**
+     * ScalarHandler：ResultSetHandler的实现类，查特殊值
+     *
+     * @throws Exception e
+     */
+@Test
+public void queryTest3() {
+    Connection conn = null;
+    try {
+        conn = JDBCUtil.getDruidConnection();
 
+        QueryRunner queryRunner = new QueryRunner();
+        String sql = "select count(*) from employee";
 
+        ScalarHandler handler = new ScalarHandler();
 
+        Long count = (Long) queryRunner.query(conn, sql, handler);
+        System.out.println(count);
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        JDBCUtil.closeResource(conn, null);
+    }
+}
 
+/**
+     * ScalarHandler：ResultSetHandler的实现类，查特殊值
+     *
+     * @throws Exception e
+     */
+@Test
+public void queryTest4() {
+    Connection conn = null;
+    try {
+        conn = JDBCUtil.getDruidConnection();
 
+        QueryRunner queryRunner = new QueryRunner();
+        String sql = "select max(birth) from employee";
 
+        ScalarHandler handler = new ScalarHandler();
 
+        Date date = (Date) queryRunner.query(conn, sql, handler);
+        System.out.println(date);
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        JDBCUtil.closeResource(conn, null);
+    }
+}
+```
 
+##### 9.3.2.3 自定义ResultSetHandler
 
+- 自定义ResultSetHandler
 
+```java
+/**
+     * 自定义ResultSetHandler
+     */
+@Test
+public void queryTest5() {
+    Connection conn = null;
+    try {
+        conn = JDBCUtil.getDruidConnection();
 
+        QueryRunner queryRunner = new QueryRunner();
+        String sql = "select id,name,password,birth from employee where id = ?";
 
+        ResultSetHandler<Employee> handler = new ResultSetHandler<Employee>() {
+            @Override
+            public Employee handle(ResultSet rs) throws SQLException {
+                if(rs.next()) {
+                    int id = rs.getInt("id");
+                    String password = rs.getString("password");
+                    String name = rs.getString("name");
+                    java.sql.Date birth = rs.getDate("birth");
+                    Employee employee = new Employee(id, name, password, birth);
+                    return employee;
+                }
+                return null;
+            }
+        };
 
+        Employee employee = queryRunner.query(conn, sql, handler, 5);
+        System.out.println(employee);
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        JDBCUtil.closeResource(conn, null);
+    }
+}
+```
 
+#### 9.3.3 Apache-DBUtils 关闭资源
 
-
-
-
-
-
+```java
+/**
+     * 关闭数据库资源
+     *
+     * @param conn
+     * @param ps
+     */
+public static void closeResourceApacheDbUtils(Connection conn, Statement ps, ResultSet rs) {
+    DbUtils.closeQuietly(conn);
+    DbUtils.closeQuietly(ps);
+    DbUtils.closeQuietly(rs);
+}
+```
 
