@@ -1026,7 +1026,7 @@ class AternateDemo {
 
 结果
 
-```shell
+​```shell
 ABCABCABCABCABCABCABCABCABCABC
 ```
 
@@ -1193,6 +1193,10 @@ class Thread2 implements Callable<Integer> {
     }
 }
 ```
+
+### 12.3 ThreadPoolExecutor 创建线程池
+
+<https://www.cnblogs.com/zedosu/p/6665306.html>
 
 
 
