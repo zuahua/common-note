@@ -1,8 +1,8 @@
 ## Tomcat 9
 
-### 相关问题
+### 1. 相关问题
 
-#### 控制台日志乱码
+#### 1.1 控制台日志乱码
 
 - conf/logging.properties
 - 改为 GBK
@@ -11,7 +11,7 @@
 java.util.logging.ConsoleHandler.encoding = GBK
 ```
 
-#### 指定的服务未安装
+#### 1.2 指定的服务未安装
 
 - 在 bin目录下运行
 
@@ -19,11 +19,23 @@ java.util.logging.ConsoleHandler.encoding = GBK
 service.bat install
 ```
 
-### 配置调优
+#### 1.3 控制台运行Tomcat
 
-#### 端口
+- 能够看见运行失败原因
 
-***server.xml***
+bin目录下运行：
+
+```shell
+catalina run
+```
+
+
+
+### 2. 配置调优
+
+#### 2.1 修改端口
+
+***conf/server.xml***
 
 ```xml
 <Connector port="8080" protocol="HTTP/1.1"
@@ -31,7 +43,7 @@ service.bat install
            redirectPort="8443" />
 ```
 
-#### 并发配置
+#### 2.2 并发配置
 
 - `maxThreads` 
   - tomcat接收客户端请求的最大线程数，也就是同时处理任务的个数，它的默认大小为`200`；一般来说，在高并发的I/O密集型应用中，这个值设置为`1000`左右比较合理
@@ -57,9 +69,9 @@ service.bat install
                redirectPort="8443" />
 ```
 
-### JVM 参数配置
+### 3. JVM 参数配置
 
-修改bin/ catalina.bat文件
+修改 ***bin/ catalina.bat*** 文件
 添加
 
 ```powershell
@@ -95,6 +107,17 @@ set CATALINA_OPTS=-server -Xms6000M -Xmx6000M -Xss512k -XX:NewSize=2250M -XX:Max
 
 ```java
 set JAVA_OPTS=-Xms128m -Xmx350m 
+```
+
+### 4. 基础配置
+
+#### 4.1 部署路径映射配置
+
+***conf\Catalina\localhost*** 下新建 **<u>xml</u>** 文件
+
+```xml
+
+<Context path="/hello"  docBase="E:\test" debug="0" reloadable="true"/> 
 ```
 
 
