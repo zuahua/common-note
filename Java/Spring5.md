@@ -350,7 +350,7 @@ Chang  19
 </beans>
 ```
 
-###### 属性注入: `null`值与**特殊符号处理**
+###### 注入属性: `null`值与**特殊符号处理**
 
 1. `null`值注入
 
@@ -379,6 +379,248 @@ Chang  19
         </value>
     </property>
 </bean>
+```
+
+###### 注入属性：外部 bean 的注入
+
+> 例：
+>
+> 1. 创建：Service类和Dao类
+>
+> 2. 在Service中调用Dao中的方法
+
+> 新的知识点：
+>
+> 1. xml 配置 `property`的`ref`属性
+
+- **Dao** 及其 **DaoImpl**类
+
+```java
+public interface UserDao {
+    void update();
+}
+```
+
+```java
+public class UserDaoImpl implements UserDao {
+    @Override
+    public void update() {
+        System.out.println("dao update...");
+    }
+}
+```
+
+- **Service** 类
+
+> 包含属性：**UserDao**
+>
+> **set** 方法
+
+```java
+public class UserService {
+    private UserDao userDao;
+
+    public void setUserDao(UserDao userDao) {
+        this.userDao = userDao;
+    }
+
+    public void add() {
+        userDao.update();
+
+        System.out.println("service add...");
+    }
+}
+```
+
+- **xml** 配置 （`resource/bean2.xml`）
+
+> <property name="userDao" `ref`="userDaoImpl"></property>
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+  <!-- 配置service和dao -->
+  <bean id="userService" class="org.learn.spring5.service.UserService">
+    <!-- 注入外部bean属性 -->
+    <property name="userDao" ref="userDaoImpl"></property>
+  </bean>
+
+  <bean id="userDaoImpl" class="org.learn.spring5.dao.UserDaoImpl"></bean>
+
+</beans>
+```
+
+- 测试
+
+```java
+@Test
+public void t5() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean2.xml");
+    UserService userService = context.getBean("userService", UserService.class);
+
+    userService.add();
+}
+```
+
+###### 注入属性：内部bean
+
+> 例：Employee类中包含Deptment属性，Deptment具有自己的属性
+
+> 新知识点：配置 `property` 标签下 嵌入`bean`标签
+
+- xml 配置
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+  <bean id="employee" class="org.learn.spring5.Employee">
+    <property name="ename" value="Chang"></property>
+    <property name="gender" value="女"></property>
+	<!-- 内部bean -->
+    <property name="dep">
+      <bean id="deptment" class="org.learn.spring5.Deptment">
+        <property name="dname" value="CIA部门"></property>
+      </bean>
+    </property>
+  </bean>
+
+</beans>
+```
+
+- Employee
+
+```java
+public class Employee {
+    private String ename;
+    private String gender;
+    private Deptment dep;
+
+    public String getEname() {
+        return ename;
+    }
+
+    public void setEname(String ename) {
+        this.ename = ename;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public Deptment getDep() {
+        return dep;
+    }
+
+    public void setDep(Deptment dep) {
+        this.dep = dep;
+    }
+
+    @Override
+    public String toString() {
+        return "Employee{" +
+                "ename='" + ename + '\'' +
+                ", gender='" + gender + '\'' +
+                ", dep=" + dep +
+                '}';
+    }
+}
+```
+
+- Deptment
+
+```java
+public class Deptment {
+    private String dname;
+
+    public String getDname() {
+        return dname;
+    }
+
+    public void setDname(String dname) {
+        this.dname = dname;
+    }
+
+    @Override
+    public String toString() {
+        return "Deptment{" +
+                "dname='" + dname + '\'' +
+                '}';
+    }
+}
+```
+
+- test
+
+```java
+@Test
+public void t6() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean3.xml");
+    Employee employee = context.getBean("employee", Employee.class);
+
+    System.out.println(employee);
+}
+```
+
+```shell
+Employee{ename='Chang', gender='女', dep=Deptment{dname='CIA部门'}}
+```
+
+###### 注入属性：级联赋值
+
+> 使用上文 Employee、Deptment
+
+- xml 配置方式一
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+  <!-- 级联赋值 -->
+  <bean id="employee" class="org.learn.spring5.Employee">
+    <property name="ename" value="Chang"></property>
+    <property name="gender" value="女"></property>
+
+    <property name="dep" ref="deptment"></property>
+  </bean>
+
+  <bean id="deptment" class="org.learn.spring5.Deptment">
+    <property name="dname" value="CIA部门"></property>
+  </bean>
+</beans>
+```
+
+- xml 配置方式二
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+  <!-- 级联赋值 -->
+  <bean id="employee" class="org.learn.spring5.Employee">
+    <property name="ename" value="Chang"></property>
+    <property name="gender" value="女"></property>
+
+    <property name="dep" ref="deptment"></property>
+    <!-- dep.dname 方式赋值，需要有getter -->
+    <property name="dep.dname" value="FIB部门"></property>
+  </bean>
+
+  <bean id="deptment" class="org.learn.spring5.Deptment"></bean>
+</beans>
 ```
 
 
