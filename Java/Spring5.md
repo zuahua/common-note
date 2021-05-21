@@ -1403,6 +1403,149 @@ public void t16() {
   </context:component-scan>
 ```
 
+#### 4.4.4 注解方式：属性注入
+
+> 1. @AutoWired：根据属性类型自动装配
+> 2. @Qualifier：根据属性名称进行注入
+> 3. @Resource：可根据类型，也可根据名称
+> 4. @Value：注入普通类型属性
+
+##### 4.4.4.1 @AutoWired
+
+> service 中 注入 dao
+
+> **@AutoWired**：根据类型，自动去找 **dao** 的实现类，并且实现类只有一个
+
+1. xml 配置扫描
+
+```xml
+<context:component-scan base-package="org.learn.spring5"></context:component-scan>
+```
+
+2. dao、daoImpl
+
+```java
+public interface EmployeeDao {
+    void add();
+}
+```
+
+```java
+@Repository
+public class EmployeeDaoImpl implements EmployeeDao {
+    @Override
+    public void add() {
+        System.out.println("dao add ...");
+    }
+}
+```
+
+3. service
+
+```java
+@Service(value = "employeeService")
+public class EmployeeService {
+
+    @Autowired
+    private EmployeeDao employeeDao;
+
+    public void add() {
+        employeeDao.add();
+        System.out.println("service add...");
+    }
+}
+```
+
+4. test
+
+```java
+@Test
+public void t16() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean-1.xml");
+
+    EmployeeService service = context.getBean("employeeService", EmployeeService.class);
+    service.add();
+}
+}
+```
+
+##### 4.4.4.2 @Qualifier
+
+> 需要配合 `@AutoWired`使用
+>
+> 使用场景：若 **dao** 有多个实现类，需要**指定 某一个实现类的名称**
+
+- service
+
+```java
+@Service(value = "employeeService")
+public class EmployeeService {
+
+    @Autowired
+    @Qualifier(value = "emloyeeDaoImpl")
+    private EmployeeDao employeeDao;
+
+    public void add() {
+        employeeDao.add();
+        System.out.println("service add...");
+    }
+}
+```
+
+- EmployeeDaoImpl
+
+> `@Repository(value = "employeeDaoImpl")`
+>
+> 参数省略，默认 `employeeDaoImpl`
+
+```java
+@Repository
+public class EmployeeDaoImpl implements EmployeeDao {
+    @Override
+    public void add() {
+        System.out.println("dao add ...");
+    }
+}
+```
+
+##### 4.4.4.3 @Resource
+
+> **@Resource：可根据类型，也可根据名称**
+
+- service
+
+```java
+@Resource
+private EmployeeDao employeeDao;
+```
+
+```java
+@Resource(name = "employeeDaoImpl")
+private EmployeeDao employeeDao;
+```
+
+##### 4.4.4.4 @Value
+
+> 基本类型属性
+
+```java
+@Service(value = "employeeService")
+public class EmployeeService {
+
+    @Value("ABC")
+    private String name;
+
+    @Resource(name = "employeeDaoImpl")
+    private EmployeeDao employeeDao;
+
+    public void add() {
+        employeeDao.add();
+        System.out.println("service add...");
+        System.out.println(name);
+    }
+}
+```
+
 
 
 
