@@ -623,17 +623,785 @@ Employee{ename='Chang', gender='女', dep=Deptment{dname='CIA部门'}}
 </beans>
 ```
 
+###### 注入属性：数组、List、Map、Set
 
+- xml 配置 (**bean4.xml**)
 
-#### 4.3.3 基于 注解 的 Bean 管理
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
 
+  <bean id="classList" class="org.learn.spring5.ClassList">
+    <property name="strings">
+      <array>
+        <value>A</value>
+        <value>B</value>
+      </array>
+    </property>
 
+    <property name="list">
+      <list>
+        <value>C</value>
+        <value>D</value>
+      </list>
+    </property>
 
+    <property name="map">
+      <map>
+        <entry key="1" value="E"></entry>
+        <entry key="2" value="F"></entry>
+      </map>
+    </property>
 
+    <property name="set">
+      <set>
+        <value>G</value>
+        <value>H</value>
+      </set>
+    </property>
+  </bean>
 
+</beans>
+```
 
+- **ClassList**
 
+```java
+public class ClassList {
+    private String[] strings;
 
+    private List<String> list;
+
+    private Map<String, String> map;
+
+    private Set<String> set;
+
+    public String[] getStrings() {
+        return strings;
+    }
+
+    public void setStrings(String[] strings) {
+        this.strings = strings;
+    }
+
+    public List<String> getList() {
+        return list;
+    }
+
+    public void setList(List<String> list) {
+        this.list = list;
+    }
+
+    public Map<String, String> getMap() {
+        return map;
+    }
+
+    public void setMap(Map<String, String> map) {
+        this.map = map;
+    }
+
+    public Set<String> getSet() {
+        return set;
+    }
+
+    public void setSet(Set<String> set) {
+        this.set = set;
+    }
+
+    @Override
+    public String toString() {
+        return "ClassList{" +
+                "strings=" + Arrays.toString(strings) +
+                ", list=" + list +
+                ", map=" + map +
+                ", set=" + set +
+                '}';
+    }
+}
+```
+
+- test
+
+```java
+@Test
+public void t8() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean4.xml");
+
+    ClassList classList = context.getBean("classList", ClassList.class);
+    System.out.println(classList);
+}
+```
+
+```shell
+ClassList{strings=[A, B], list=[C, D], map={1=E, 2=F}, set=[G, H]}
+```
+
+###### 注入属性：集合类型
+
+> 新的配置标签: `ref`
+
+- xml 配置文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+  <bean id="library" class="org.learn.spring5.Library">
+    <property name="books">
+      <list>
+        <!-- 集合 ref 方式 -->  
+        <ref bean="book1"></ref>
+        <ref bean="book2"></ref>
+      </list>
+    </property>
+  </bean>
+
+  <bean id="book1" class="org.learn.spring5.Book">
+    <property name="id" value="1"></property>
+    <property name="name" value="Java编程思想"></property>
+  </bean>
+  <bean id="book2" class="org.learn.spring5.Book">
+    <property name="id" value="2"></property>
+    <property name="name" value="Java核心技术"></property>
+  </bean>
+</beans>
+```
+
+- `Library`
+
+```java
+public class Library {
+    private List<Book> books;
+
+    public List<Book> getBooks() {
+        return books;
+    }
+
+    public void setBooks(List<Book> books) {
+        this.books = books;
+    }
+
+    @Override
+    public String toString() {
+        return "Library{" +
+                "books=" + books +
+                '}';
+    }
+}
+```
+
+- `Book`
+
+```java
+public class Book {
+    private String name;
+
+    private int id;
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    @Override
+    public String toString() {
+        return "Book{" +
+                "name='" + name + '\'' +
+                ", id=" + id +
+                '}';
+    }
+}
+```
+
+- test
+
+```java
+@Test
+public void t9() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean5.xml");
+
+    Library library = context.getBean("library", Library.class);
+    System.out.println(library);
+}
+```
+
+```shell
+Library{books=[Book{name='Java编程思想', id=1}, Book{name='Java核心技术', id=2}]}
+```
+
+###### 注入属性：集合属性提取 `util`命名空间
+
+> 命名空间：
+>
+> `xmlns:util="http://www.springframework.org/schema/util"`
+>
+> `http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd`
+
+- 使用 `Library`和`Book`类
+
+- xml 配置
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+  <bean id="library" class="org.learn.spring5.Library">
+    <property name="books" ref="bookList">
+    </property>
+  </bean>
+
+  <!-- util 方式 -->
+  <util:list id="bookList">
+    <bean id="book1" class="org.learn.spring5.Book">
+      <property name="id" value="1"></property>
+      <property name="name" value="Java编程思想"></property>
+    </bean>
+    <bean id="book2" class="org.learn.spring5.Book">
+      <property name="id" value="2"></property>
+      <property name="name" value="Java核心技术"></property>
+    </bean>
+  </util:list>
+
+</beans>
+```
+
+#### 4.3.3 操作 Bean 管理 `FactoryBean`
+
+> 1. **Spring** 有两种类型的**bean**，一种是普通的**bean**，一种是**FactoryBean**
+> 2. 普通**bean**：配置文件中定义**bean**类型就是返回类型
+> 3. 工厂**bean**：配置文件定义的**bean**类型可以和返回类型不一样
+
+- 实现 **FactoryBean**
+
+```java
+public class MyBean implements FactoryBean<Book> {
+    @Override
+    public Book getObject() throws Exception {
+        // 实际应工厂模式 + 反射，这里模拟
+        Book book = new Book();
+        book.setId(1);
+        book.setName("A");
+        return book;
+    }
+
+    @Override
+    public Class<?> getObjectType() {
+        return null;
+    }
+
+    @Override
+    public boolean isSingleton() {
+        return false;
+    }
+}
+```
+
+- 配置
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+  <bean id="myBean" class="org.learn.spring5.factorybean.MyBean"></bean>
+
+</beans>
+```
+
+- test
+
+```java
+@Test
+public void t11() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean7.xml");
+
+    Book myBean = context.getBean("myBean", Book.class);
+    System.out.println(myBean);
+}
+```
+
+#### 4.3.4 Bean 管理：Bean 的作用域
+
+> 1. Spring 中，创建 Bean 实例默认是**<u>单例</u>**的
+> 2. `bean`标签中，`scope`属性值：`singleton`和`prototype`
+> 3. `singleton`：**单例，加载Spring配置文件时就会创建对应Bean实例**
+> 4. `prototype`：多实例，调用`getBean()`方法时创建多实例对象
+
+##### 4.3.4.1 默认单例测试，查看对象地址
+
+1. xml 配置
+
+```xml
+<bean id="book" class="org.learn.spring5.Book1"></bean>
+```
+
+2. Book1类
+
+```java
+public class Book1 {
+}
+```
+
+3. test
+
+```java
+@Test
+public void t12() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean7.xml");
+
+    Book1 book1 = context.getBean("book", Book1.class);
+    Book1 book2 = context.getBean("book", Book1.class);
+    System.out.println(book1);
+    System.out.println(book2);
+}
+```
+
+结果：**<u>地址相同</u>**
+
+```shell
+org.learn.spring5.Book1@3e58a80e
+org.learn.spring5.Book1@3e58a80e
+```
+
+##### 4.3.4.2 `prototype` 多实例测试
+
+1. xml 配置修改
+
+`scope="prototype"`
+
+```xml
+<bean id="book" class="org.learn.spring5.Book1" scope="prototype"></bean>
+```
+
+2. 测试结果，**<u>地址不一致</u>**
+
+```shell
+org.learn.spring5.Book1@3e58a80e
+org.learn.spring5.Book1@4fb61f4a
+```
+
+#### 4.3.5 Bean 管理：Bean 的生命周期
+
+##### 4.3.5.1 Bean 生命周期
+
+> 1. 通过构造器创建bean实例（无参构造方法）
+> 2. 为bean的属性设置值和对其他bean的引用
+> 3. 调用bean的初始化方法（配置初始化方法）
+> 4. bean可以使用了
+> 5. 关闭容器，销毁bean（配置销毁方法）
+
+- 演示
+
+1. xml 配置
+
+```xml
+<bean id="book2" class="org.learn.spring5.Book2" init-method="initMethod" destroy-method="destoryMethod">
+    <property name="name" value="Java核心思想"></property>
+</bean>
+```
+
+2. Book2类
+
+```java
+public class Book2 {
+    public Book2() {
+        System.out.println("1... 调用无参构造器");
+    }
+
+    private String name;
+
+    public void setName(String name) {
+        this.name = name;
+        System.out.println("2... 设置属性值");
+    }
+
+    public void initMethod() {
+        System.out.println("3... 初始化方法");
+    }
+
+    public void destoryMethod() {
+        System.out.println("5... 销毁bean");
+    }
+}
+```
+
+3. test
+
+```java
+@Test
+public void t13() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean7.xml");
+
+    Book2 book = context.getBean("book2", Book2.class);
+    System.out.println("4... 获取到bean 可以使用了");
+
+    // 关闭容器
+    context.close();
+}
+```
+
+4. 结果
+
+```shell
+1... 调用无参构造器
+2... 设置属性值
+3... 初始化方法
+4... 获取到bean 可以使用了
+5... 销毁bean
+```
+
+##### 4.3.5.2 bean 生命周期：后置处理器
+
+> 1. 通过构造器创建bean实例（无参构造方法）
+> 2. 为bean的属性设置值和对其他bean的引用
+> 3. 将bean传递给后置处理器方法 
+> 4. 调用bean的初始化方法（配置初始化方法）
+> 5. 将bean传递给后置处理器方法 
+> 6. bean可以使用了
+> 7. 关闭容器，销毁bean（配置销毁方法）
+
+> **注意：后置处理器，每个bean的创建都会调用**
+>
+> 后置处理器，实现`BeanPostProcessor`接口
+
+- 例
+
+1. xml 配置
+
+```xml
+<bean id="book2" class="org.learn.spring5.Book2" init-method="initMethod" destroy-method="destoryMethod">
+    <property name="name" value="Java核心思想"></property>
+</bean>
+
+<!-- 配置后置处理器 -->
+<bean id="postProcessor" class="org.learn.spring5.PostPro"></bean>
+```
+
+2. 后置处理器，实现`BeanPostProcessor`接口
+
+```java
+public class PostPro implements BeanPostProcessor {
+    @Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+        System.out.println("... 初始化之前");
+        return bean;
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        System.out.println("... 初始化之后");
+        return bean;
+    }
+}
+```
+
+3. Book2类见前文
+4. test
+
+```java
+@Test
+public void t13() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean7.xml");
+
+    Book2 book = context.getBean("book2", Book2.class);
+    System.out.println("4... 获取到bean 可以使用了");
+
+    // 关闭容器
+    context.close();
+}
+```
+
+5. 结果
+
+```shell
+1... 调用无参构造器
+2... 设置属性值
+... 初始化之前
+3... 初始化方法
+... 初始化之后
+4... 获取到bean 可以使用了
+5... 销毁bean
+```
+
+#### 4.3.6 Bean 管理：**自动装配** (基于xml)
+
+##### 4.3.6.1 概念
+
+> **自动装配概念：**
+>
+> **<u>根据指定装配规则（属性名称或者属性类型），Spring 自动将匹配的属性值进行注入</u>**
+
+##### 4.3.6.2 装配过程
+
+> 配置文件`bean`标签的`aotowire`属性
+>
+> 属性值：`byName`、`byType`
+>
+> 1. `byName`：注入`bean`的`id`值和类属性名称一样
+> 2. `byType`：属性类型和注入`bean`类型一样
+
+##### 4.3.6.3 `byName` 例
+
+1. xml 配置
+
+```xml
+<bean id="employee" class="org.learn.spring5.autowire.Employee" autowire="byName"></bean>
+<!-- 属性名相同 dep -->
+<bean id="dep" class="org.learn.spring5.autowire.Deptment">
+    <property name="dname" value="职能部"></property>
+</bean>
+```
+
+2. `Deptment`、`Employee`类
+
+```java
+public class Deptment {
+    private String dname;
+
+    public void setDname(String dname) {
+        this.dname = dname;
+    }
+
+    @Override
+    public String toString() {
+        return "Deptment{" +
+                "dname='" + dname + '\'' +
+                '}';
+    }
+}
+```
+
+```java
+public class Employee {
+    private Deptment dep;
+
+    public void setDep(Deptment dep) {
+        this.dep = dep;
+    }
+
+    @Override
+    public String toString() {
+        return "Employee{" +
+                "dep=" + dep +
+                '}';
+    }
+}
+```
+
+3. test
+
+```java
+@Test
+public void t14() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean8.xml");
+
+    org.learn.spring5.autowire.Employee employee = context.getBean("employee", org.learn.spring5.autowire.Employee.class);
+    System.out.println(employee);
+}
+```
+
+```shell
+Employee{dep=Deptment{dname='职能部'}}
+```
+
+##### 4.3.6.4 `byType` 例
+
+- xml 配置
+
+```xml
+<bean id="employee" class="org.learn.spring5.autowire.Employee" autowire="byType"></bean>
+<!-- 属性类型相同 Deptment -->
+<bean id="dep" class="org.learn.spring5.autowire.Deptment">
+    <property name="dname" value="职能部"></property>
+</bean>
+```
+
+#### 4.3.7 通过**外部文件**配置属性
+
+> 以**Druid**数据库连接池为例
+
+> 知识点：
+>
+> 新建 **properties** 配置文件
+>
+> xml 配置文件 `properties` 文件路径，添加 `context`名称空间
+>
+> 使用 `${}`方式使用属性
+
+1. 引入 `druid` jar包
+2. **jdbc.properties**
+
+```properties
+username=root
+password=123456
+driverClassName=com.mysql.cj.jdbc.Driver
+url=jdbc:mysql://localhost:3306/test?characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowMultiQueries=true
+```
+
+3. **xml** 配置
+
+> 名称空间：
+>
+> `xmlns:context="http://www.springframework.org/schema/context"`
+>
+> `http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd`
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+  <bean id="source" class="com.alibaba.druid.pool.DruidDataSource">
+    <property name="username" value="${username}"></property>
+    <property name="password" value="${password}"></property>
+    <property name="driverClassName" value="${driverClassName}"></property>
+    <property name="url" value="${url}"></property>
+  </bean>
+  <!-- properties 配置文件 -->  
+  <context:property-placeholder location="classpath:resource/jdbc.properties" />
+</beans>
+```
+
+4. 测试
+
+```java
+@Test
+public void t15() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean9.xml");
+
+    DruidDataSource source = context.getBean("source", DruidDataSource.class);
+    System.out.println(source);
+}
+```
+
+结果
+
+```shell
+{
+	CreateTime:"2021-05-21 14:36:43",
+	ActiveCount:0,
+	PoolingCount:0,
+	CreateCount:0,
+	DestroyCount:0,
+	CloseCount:0,
+	ConnectCount:0,
+	Connections:[
+	]
+}
+```
+
+### 4.4 Bean 管理：**注解方式**
+
+#### 4.4.1 基础 概念
+
+> **注解**：
+>
+> 1. 注解是代码特殊标记，格式：**@注解名称(属性名=属性值...)**
+> 2. 可作用在**类、方法、属性上**
+> 3. 使用注解，简化 xml 配置
+
+> Spring 针对 **Bean 的创建** 提供的注解：
+>
+> 1. `Component`
+> 2. `Service`
+> 3. `Controller`
+> 4. `Repository`
+
+#### 4.4.2 基于注解方式实现对象创建
+
+##### 4.4.2.1 引入 aop 依赖包
+
+`spring-aop-5.2.6.RELEASE.jar`
+
+##### 4.4.2.2 配置 Spring 扫描
+
+**xml 配置，需要 context 名称空间**
+
+- `base-package`为扫描的包路径
+- 扫描多个包
+  - 包名用 `,` 隔开
+  - 或者使用**父路径**包名
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+  <context:component-scan base-package="org.learn.spring5"></context:component-scan>
+
+</beans>
+```
+
+##### 4.4.2.3 类
+
+- `(value = "employeeService")`可省略，默认 `value = "employeeService"` ,也就是类名的小驼峰写法作为`value`
+
+```java
+@Service(value = "employeeService")
+public class EmployeeService {
+    public void add() {
+        System.out.println("add...");
+    }
+}
+```
+
+##### 4.4.2.4 测试
+
+```java
+@Test
+public void t16() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean-1.xml");
+
+    EmployeeService service = context.getBean("employeeService", EmployeeService.class);
+    service.add();
+}
+```
+
+#### 4.4.3 扫描配置扩展
+
+> **use-default-filters** ：表示不使用默认扫描，只扫描`context:exclude-filter`配置内容
+
+- 只扫描 Controller
+
+```xml
+<context:component-scan base-package="org.learn.spring5" use-default-filters="false">
+    <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+</context:component-scan>
+```
+
+- 除 Controller 都扫描
+
+```xml
+  <context:component-scan base-package="org.learn.spring5">
+    <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+  </context:component-scan>
+```
 
 
 
