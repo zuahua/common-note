@@ -1546,6 +1546,783 @@ public class EmployeeService {
 }
 ```
 
+### 4.5 **完全注解开发**
+
+#### 4.5.1 **创建配置类**，替代xml配置文件
+
+> 实际开发中 Spring Boot 
+
+> @Configuration
+> @ComponentScan(basePackages = {"org.learn"})
+
+```java
+@Configuration
+@ComponentScan(basePackages = {"org.learn"})
+public class SpringConfig {
+}
+```
+
+#### 4.5.2 测试类
+
+> 类： **AnnotationConfigApplicationContext**
+
+```java
+@Test
+public void t17() {
+    // 配置类
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
+
+    EmployeeService service = context.getBean("employeeService", EmployeeService.class);
+    service.add();
+}
+```
+
+```shell
+dao add ...
+service add...
+ABC
+```
+
+## 5.AOP
+
+### 5.1 介绍
+
+> AOP (Aspect Oriented Programming)：
+>
+> 1. 面向切面编程，隔离各部分业务逻辑，降低耦合度，提高可重用性，提高开发效率
+
+例 图：
+
+![image-20210530095033722](https://raw.githubusercontent.com/zuahua/image/master/common-note/20210530095042.png)
+
+### 5.2 AOP 底层原理
+
+#### 5.2.1 AOP底层使用**动态代理**
+
+##### 5.2.1.1 有接口情况，JDK动态代理
+
+![image-20210530100237242](https://raw.githubusercontent.com/zuahua/image/master/common-note/20210530100237.png)
+
+##### 5.2.1.2 无接口情况，CGLIB动态代理
+
+> 创建子类的代理对象，增强类的方法
+
+![image-20210530100553640](https://raw.githubusercontent.com/zuahua/image/master/common-note/20210530100553.png)
+
+### 5.3 AOP JDK动态代理
+
+#### 5.3.1 Proxy类说明
+
+> `java.lang.reflect.Proxy`
+
+> 1. JDK动态代理，使用`Proxy`类里面的方法创建代理对象
+> 2. 使用`newProxyInstance()`方法
+
+```java
+public static Object newProxyInstance(ClassLoader loader,
+                                          Class<?>[] interfaces,
+                                          InvocationHandler h)
+```
+
+> 参数说明：
+>
+> 1. `ClassLoader` 类加载器
+> 2. `Class<?>[] interfaces`实现增强方法所在接口的类，支持多个
+> 3. `InvocationHandler` 实现**InvocationHandler**类，写增强方法
+
+#### 5.3.2 实现例
+
+> 实现 `UserDao` 的代理类
+>
+> 1. UserDao 接口
+> 2. UserDaoImpl 接口实现类
+> 3. JDKProxy 代理类
+
+1. `UserDao`
+
+```java
+public interface UserDao {
+    int add(int a, int b);
+
+    String update(String id);
+}
+```
+
+2. `UserDaoImpl`
+
+```java
+public class UserDaoImpl implements UserDao {
+    @Override
+    public int add(int a, int b) {
+        System.out.println("add 方法被调用");
+        return a + b;
+    }
+
+    @Override
+    public String update(String id) {
+        System.out.println("update 方法调用");
+        return id;
+    }
+}
+```
+
+3. `JDKProxy`
+
+```java
+public class JDKProxy {
+    public static void main(String[] args) {
+        // 代理接口类
+        Class[] interfaces = {UserDao.class};
+
+        // handler
+        UserDaoImpl userDao = new UserDaoImpl();
+        UserDaoProxyHandler handler = new UserDaoProxyHandler(userDao);
+
+        // 代理类
+        UserDao userDaoProxy = (UserDao) Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(), interfaces, handler);
+        userDaoProxy.add(1, 2);
+        userDaoProxy.update("1");
+
+    }
+}
+
+class UserDaoProxyHandler implements InvocationHandler {
+
+    /**
+     * 通过构造方法将代理目标类传进来
+     */
+    private Object obj;
+
+    public UserDaoProxyHandler(Object obj) {
+        this.obj = obj;
+    }
+
+    /**
+     * 增强代理方法
+     */
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        // 方法之前
+        System.out.println(method.getName() + " 方法之前执行..." + " : 传递的参数：" + Arrays.toString(args));
+
+        // 调用被代理的方法
+        Object invoke = method.invoke(obj, args);
+
+        // 方法之后
+        System.out.println(method.getName() + " 方法之后执行...");
+
+        return invoke;
+    }
+}
+```
+
+### 5.4 AOP术语
+
+#### 5.4.1 连接点
+
+> 类里面哪些方法可以被增强，这些方法称为**连接点**
+
+#### 5.4.2 切入点
+
+> 实际被真正增强的方法，称为切入点
+
+#### 5.4.3 通知（增强）
+
+> 1. 实际增强的逻辑部分称为通知（增强）
+> 2. 通知有多种类型：
+>     1. 前置通知
+>     2. 后置通知
+>     3. 环绕通知
+>     4. 异常通知
+>     5. 最终通知  finally
+
+#### 5.4.4 切面
+
+> 是动作
+>
+> 把通知应用到切入点的过程。
+
+### 5.5 AOP操作（准备）
+
+1. Spring 框架一般使用**AspectJ**实现AOP操作
+    1. **AspectJ**不是Spring组成部分，是独立的AOP框架，一般把AspectJ和Spring框架一起使用，进行AOP操作。
+2. 基于AspectJ实现AOP操作
+    1. xml配置实现
+    2. 注解
+3. 依赖引入
+
+> 1. spring的aspect依赖 `spring-aspects-5.2.6.RELEASE.jar`
+
+> 外部与 aop 相关依赖：
+>
+> 1. `com.springsource.net.sf.cglib-2.2.0.jar`
+> 2. `com.springsource.org.aopalliance-1.0.0.jar`
+> 3. `com.springsource.org.aspectj.weaver-1.6.8.RELEASE.jar`
+
+4. 切入点表达式
+
+（1）作用：对哪个类的哪个方法进行增强；
+
+（2）语法结构：
+
+```java
+execution([权限修饰符][返回类型][类全路径][方法名称]([参数类型]))
+
+举例1：对org.learn.dao.BookDao的add方法进行增强
+execution(* org.learn.dao.BookDao.add(..))  
+  
+举例2：对org.learn.dao.BookDao的所有方法进行增强
+execution(* org.learn.dao.BookDao.*(..))    
+  
+举例3：对org.learn.dao包下所有类所有方法进行增强
+execution(* org.learn.dao.*.*(..))    
+```
+
+### 5.6 AOP 操作（AspectJ **注解方式**）
+
+#### 5.6.1 被增强的类与增强类
+
+1. `UserDao`
+
+```java
+public class UserDao {
+    public void add() {
+        System.out.println("add...");
+    }
+}
+```
+
+2. `UserDaoProxy`
+
+```java
+public class UserDaoProxy {
+    public void before() {
+        System.out.println("before..");
+    }
+}
+```
+
+#### 5.6.2 配置
+
+流程：
+
+> 1. 配置文件，开启注解扫描
+> 2. 注解创建 `UserDao` `UserDaoProxy`对象
+> 3. 在增强类添加 @Aspect 注解
+> 4. spring 配置文件开启生成代理对象
+
+##### 5.6.2.1 spring 配置文件
+
+> 添加`context` `aop` 名称空间
+>
+> 开启注解扫描
+>
+> 开启 aspect
+
+**bean-aop1.xml**
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!--注解扫描-->
+    <context:component-scan base-package="org.learn.spring5.aopanno"></context:component-scan>
+    <!--开启Aspect生成代理对象-->
+    <aop:aspectj-autoproxy></aop:aspectj-autoproxy>
+
+</beans>
+```
+
+##### 5.6.2.2 UserDao
+
+```java
+@Component
+public class UserDao {
+    public void add() {
+        System.out.println("add...");
+    }
+}
+```
+
+##### 5.6.2.3 增强类 UserDaoProxy，几种通知
+
+> 几种通知：
+>
+> 1. @Before
+> 2. @After
+> 3. @AfterReturning
+> 4. @AfterThrowing
+> 5. @Around
+
+```java
+@Component
+@Aspect // 生成代理对象
+public class UserDaoProxy {
+    // Before注解表示前置通知
+    @Before(value = "execution(* org.learn.spring5.aopanno.UserDao.add(..))")
+    public void before() {
+        System.out.println("before..");
+    }
+
+    // 最终通知，有无异常都会执行
+    @After(value = "execution(* org.learn.spring5.aopanno.UserDao.add(..))")
+    public void after() {
+        System.out.println("after..");
+    }
+
+    // 后置通知（返回通知）
+    @AfterReturning(value = "execution(* org.learn.spring5.aopanno.UserDao.add(..))")
+    public void afterReturning() {
+        System.out.println("afterReturning..");
+    }
+
+    // 异常通知
+    @AfterThrowing(value = "execution(* org.learn.spring5.aopanno.UserDao.add(..))")
+    public void afterThrowing() {
+        System.out.println("afterThrowing..");
+    }
+
+    // 环绕通知
+    @Around(value = "execution(* org.learn.spring5.aopanno.UserDao.add(..))")
+    public void Around(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+        System.out.println("环绕之前");
+        // 被增强方法执行
+        proceedingJoinPoint.proceed();
+        System.out.println("环绕之后");
+    }
+}
+```
+
+#### 5.6.3 测试
+
+> 通知执行顺序异同
+
+```java
+@Test
+public void t1() {
+  ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean-aop1.xml");
+  UserDao userDao = context.getBean("userDao", UserDao.class);
+  userDao.add();
+}
+```
+
+```shell
+环绕之前
+before..
+add...
+环绕之后
+after..
+afterReturning..
+```
+
+add方法中添加除0代码再测试：
+
+```shell
+环绕之前
+before..
+after..
+afterThrowing..
+
+java.lang.ArithmeticException: / by zero
+```
+
+#### 5.6.4 补充：相同切入点的抽取
+
+> `@Pointcut(value = "execution(* org.learn.spring5.aopanno.UserDao.add(..))")`
+
+UserDaoProxy代理类
+
+```java
+@Component
+@Aspect // 生成代理对象
+public class UserDaoProxy {
+	// 抽取公共切入点
+    @Pointcut(value = "execution(* org.learn.spring5.aopanno.UserDao.add(..))")
+    public void pointcut() {
+
+    }
+	// 使用公共切入点
+    // Before注解表示前置通知
+    @Before(value = "pointcut()")
+    public void before() {
+        System.out.println("before..");
+    }
+}
+```
+
+#### 5.6.5 补充：多个增强类对同一个类进行增强，设置优先级
+
+> `@Order(int value)` value越小，优先级越高
+
+1. 新建增强类**PersonUserProxy**
+
+```java
+@Component
+@Aspect
+@Order(0)
+public class PersonUserProxy {
+    @Before(value = "execution(* org.learn.spring5.aopanno.UserDao.add(..))")
+    public void before() {
+        System.out.println("Person before");
+    }
+}
+```
+
+2. 增强类 **UserDaoProxy** 前添加注解
+
+```java
+@Order(2)
+```
+
+3. 测试结果(测试代码接上文)
+
+```shell
+Person before
+环绕之前
+before..
+add...
+环绕之后
+after..
+afterReturning..
+```
+
+#### 5.6.6 补充：完全注解方式（不使用配置文件）
+
+##### 5.6.6.1 配置类
+
+> @Configuration
+> @ComponentScan(basePackages = {"org.learn.spring5.aopanno"})
+> @EnableAspectJAutoProxy(proxyTargetClass = true)
+
+```java
+package org.learn.spring5.aopanno;
+
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+
+/**
+ * @author zh
+ * @createTime 2021/6/6 10:10
+ */
+@Configuration
+@ComponentScan(basePackages = {"org.learn.spring5.aopanno"})
+@EnableAspectJAutoProxy(proxyTargetClass = true)
+public class SpringConfig {
+}
+```
+
+##### 5.6.6.2 测试
+
+> AnnotationConfigApplicationContext
+
+```java
+@Test
+public void t2() {
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(SpringConfig.class);
+    UserDao userDao = context.getBean("userDao", UserDao.class);
+    userDao.add();
+}
+```
+
+### 5.7 AOP操作（AspectJ配置文件方式）
+
+#### 5.7.1 增强类与被增强类
+
+```java
+public class BookProxy {
+    public void before() {
+        System.out.println("before");
+    }
+}
+```
+
+```java
+public class Book {
+    public void buy() {
+        System.out.println("book buy");
+    }
+}
+```
+
+#### 5.7.2 配置文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!--创建对象-->
+    <bean id="book" class="org.learn.spring5.aopxml.Book"></bean>
+    <bean id="bookProxy" class="org.learn.spring5.aopxml.BookProxy"></bean>
+
+    <!--aop配置-->
+    <aop:config>
+        <!--切入点-->
+        <aop:pointcut id="p1" expression="execution(* org.learn.spring5.aopxml.Book.buy(..))"/>
+        <!--配置切面-->
+        <aop:aspect ref="bookProxy">
+            <!--增强作用到的具体的方法上-->
+            <aop:before method="before" pointcut-ref="p1"/>
+        </aop:aspect>
+    </aop:config>
+
+</beans>
+```
+
+#### 5.7.3 测试
+
+```java
+@Test
+public void t3() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean-aop-xml.xml");
+    Book book = context.getBean("book", Book.class);
+    book.buy();
+}
+```
+
+```shell
+before
+book buy
+```
+
+## 6.JDBCTemplate
+
+### 6.1 JDBCTemplate概念
+
+> 什么是JDBCTemplate?
+>
+> Spring框架对JDBC进行封装，使用JDBCTemplate方便实现对数据库操作。
+
+### 6.2 准备工作
+
+#### 6.2.1 引入相关**jar**包
+
+前文基础上，还需引入
+
+> mysql-connector-java-5.1.10.jar
+>
+> spring下：
+>
+> spring-jdbc-5.2.6.RELEASE.jar
+>
+> spring-orm-5.2.6.RELEASE.jar              (整合MyBatis等数据持久层框架)
+>
+> spring-tx-5.2.6.RELEASE.jar                  (事务相关)
+
+#### 6.2.2 配置数据库连接池
+
+使用外部文件方式 (4.3.7节)
+
+1. **jdbc.properties**
+
+```properties
+jdbc.username=root
+password=123456
+driverClassName=com.mysql.cj.jdbc.Driver
+url=jdbc:mysql://localhost:3306/test?characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowMultiQueries=true
+```
+
+2. **bean.xml**
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+    <!-- 数据库连接池 -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="username" value="${username}"></property>
+        <property name="password" value="${password}"></property>
+        <property name="driverClassName" value="${driverClassName}"></property>
+        <property name="url" value="${url}"></property>
+    </bean>
+    <!-- properties 配置文件 -->
+    <context:property-placeholder location="classpath:resource/jdbc.properties"/>
+
+</beans>
+```
+
+#### 6.2.3 配置 JDBCTemplate对象
+
+**bean.xml**
+
+```xml
+<!--JDBCTemplate对象-->
+<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+    <!--注入dataSource-->
+    <property name="dataSource" ref="dataSource"></property>
+</bean>
+```
+
+#### 6.2.4 创建service类、dao类，在dao中注入jdbcTemplate对象
+
+1. 配置组件扫描
+
+```xml
+<!--组件扫描-->
+<context:component-scan base-package="org.learn"></context:component-scan>
+```
+
+2. service类
+
+```java
+@Service
+public class BookService {
+    @Autowired
+    private BookDao bookDao;
+}
+```
+
+3. dao类
+
+```java
+@Repository
+public interface BookDao {
+}
+```
+
+```java
+@Repository
+public class BookDaoImpl implements BookDao {
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+}
+```
+
+### 6.3 JDBCTemplate操作
+
+#### 6.3.1 book entity
+
+```java
+public class Book {
+    private Integer id;
+    private String name;
+    private Integer staus;
+
+    public Book() {
+    }
+
+    public Book(Integer id, String name, Integer staus) {
+        this.id = id;
+        this.name = name;
+        this.staus = staus;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Integer getStaus() {
+        return staus;
+    }
+
+    public void setStaus(Integer staus) {
+        this.staus = staus;
+    }
+}
+```
+
+#### 6.3.2 dao 使用 jdbcTemplate
+
+```java
+@Repository
+public interface BookDao {
+    int add(Book book);
+}
+```
+
+```java
+@Repository
+public class BookDaoImpl implements BookDao {
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Override
+    public int add(Book book) {
+        String sql = "insert into book(id,name,status) values(?,?,?)";
+        Object[] args = {book.getId(), book.getName(), book.getStaus()};
+        return jdbcTemplate.update(sql, args);
+    }
+}
+```
+
+#### 6.3.3 service
+
+```java
+@Service
+public class BookService {
+    @Autowired
+    private BookDao bookDao;
+
+    public int addBook(Book book) {
+        return bookDao.add(book);
+    }
+}
+```
+
+#### 6.3.4 test
+
+```java
+@Test
+public void t1() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean.xml");
+    BookService bookService = context.getBean("bookService", BookService.class);
+    Book book = new Book(1, "Java核心思想", 0);
+    int res = bookService.addBook(book);
+    System.out.println(res);
+}
+```
+
+#### 6.3.5 出现异常 注意
+
+异常： **Access denied for user 'hua'@'localhost' (using password: YES)**
+
+> 数据库 配置文件
+>
+> 因为在系统中也有个username属性，这时系统变量覆盖了Properties中的值，这时取得username的值为系统的用户名Administrator（主机名），密码为properties中的password去查询数据库，此时用户名名和密码并不匹配就会报错。
+
+使用前缀：
+
+```properties
+jdbc.username=root
+```
+
+
+
+
+
+
+
+
+
 
 
 
