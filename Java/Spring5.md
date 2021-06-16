@@ -2210,18 +2210,22 @@ public class BookDaoImpl implements BookDao {
 #### 6.3.1 book entity
 
 ```java
+/**
+ * @author zh
+ * @createTime 2021/6/9 10:37
+ */
 public class Book {
     private Integer id;
     private String name;
-    private Integer staus;
+    private Integer status;
 
     public Book() {
     }
 
-    public Book(Integer id, String name, Integer staus) {
+    public Book(Integer id, String name, Integer status) {
         this.id = id;
         this.name = name;
-        this.staus = staus;
+        this.status = status;
     }
 
     public Integer getId() {
@@ -2240,22 +2244,26 @@ public class Book {
         this.name = name;
     }
 
-    public Integer getStaus() {
-        return staus;
+    public Integer getStatus() {
+        return status;
     }
 
-    public void setStaus(Integer staus) {
-        this.staus = staus;
+    public void setStatus(Integer status) {
+        this.status = status;
     }
 }
 ```
 
-#### 6.3.2 dao 使用 jdbcTemplate
+#### 6.3.2 dao 使用 jdbcTemplate （增删改）
 
 ```java
 @Repository
 public interface BookDao {
     int add(Book book);
+
+    int update(Book book);
+
+    int delete(int id);
 }
 ```
 
@@ -2268,8 +2276,21 @@ public class BookDaoImpl implements BookDao {
     @Override
     public int add(Book book) {
         String sql = "insert into book(id,name,status) values(?,?,?)";
-        Object[] args = {book.getId(), book.getName(), book.getStaus()};
+        Object[] args = {book.getId(), book.getName(), book.getStatus()};
         return jdbcTemplate.update(sql, args);
+    }
+
+    @Override
+    public int update(Book book) {
+        String sql = "update book set name=?,status=? where id=?";
+        Object[] args = {book.getName(), book.getStatus(), book.getId()};
+        return jdbcTemplate.update(sql, args);
+    }
+
+    @Override
+    public int delete(int id) {
+        String sql = "delete from book where id=?";
+        return jdbcTemplate.update(sql, id);
     }
 }
 ```
@@ -2285,6 +2306,23 @@ public class BookService {
     public int addBook(Book book) {
         return bookDao.add(book);
     }
+
+    /**
+     * 修改操作
+     * @param book book
+     */
+    public int updateBook(Book book) {
+        return bookDao.update(book);
+    }
+
+    /**
+     * 删除
+     * @param id id
+     * @return number
+     */
+    public int deleteBook(int id) {
+        return bookDao.delete(id);
+    }
 }
 ```
 
@@ -2295,9 +2333,12 @@ public class BookService {
 public void t1() {
     ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean.xml");
     BookService bookService = context.getBean("bookService", BookService.class);
-    Book book = new Book(1, "Java核心思想", 0);
-    int res = bookService.addBook(book);
-    System.out.println(res);
+    Book book = new Book(1, "核心思想", 1);
+    //        int res = bookService.addBook(book);
+    //        System.out.println(res);
+    //        int i = bookService.updateBook(book);
+    int i = bookService.deleteBook(1);
+    System.out.println(i);
 }
 ```
 
@@ -2315,13 +2356,732 @@ public void t1() {
 jdbc.username=root
 ```
 
+### 6.4 查询操作
 
+#### 6.4.1 查询单独的值
 
+> jdbcTemplate.queryForObject(sql, Integer.class);
 
+1. bookDao 添加方法
 
+```java
+int count();
+```
 
+2. BookDaoImpl 实现方法
 
+```java
+@Override
+public int count() {
+    String sql = "select count(*) from book";
+    return jdbcTemplate.queryForObject(sql, Integer.class);
+}
+```
 
+3. BookService 调用
+
+```java
+public int count() {
+    return bookDao.count();
+}
+```
+
+4. 测试
+
+```java
+@Test
+public void t2() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean.xml");
+    BookService bookService = context.getBean("bookService", BookService.class);
+
+    int count = bookService.count();
+    System.out.println(count);
+}
+```
+
+#### 6.4.2 查询单个对象
+
+> jdbcTemplate.queryForObject(sql, new BeanPropertyRowMapper<Book>(Book.class), id);
+
+1. BookDao
+
+```java
+Book queryById(int id);
+```
+
+2. BookDaoImpl
+
+```java
+@Override
+public Book queryById(int id) {
+    String sql = "select * from book where id=?";
+    return jdbcTemplate.queryForObject(sql, new BeanPropertyRowMapper<Book>(Book.class), id);
+}
+```
+
+3. BookService
+
+```java
+public Book queryOneBook(int id) {
+    return bookDao.queryById(id);
+}
+```
+
+4. 测试
+
+```java
+@Test
+public void t3() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean.xml");
+    BookService bookService = context.getBean("bookService", BookService.class);
+
+    Book book = bookService.queryOneBook(1);
+    System.out.println(book);
+}
+```
+
+#### 6.4.3 查询 返回集合
+
+1. BookDao
+
+```java
+List<Book> queryAll();
+```
+
+2. BookDaoImpl
+
+```java
+@Override
+public List<Book> queryAll() {
+    String sql = "select * from book";
+    return jdbcTemplate.query(sql, new BeanPropertyRowMapper<Book>(Book.class));
+}
+```
+
+3. BookService
+
+```java
+public List<Book> queryAll() {
+    return bookDao.queryAll();
+}
+```
+
+4. 测试
+
+```java
+@Test
+public void t4() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean.xml");
+    BookService bookService = context.getBean("bookService", BookService.class);
+
+    List<Book> books = bookService.queryAll();
+    System.out.println(books);
+}
+```
+
+```shell
+[Book{id=1, name='java', status=0}, Book{id=2, name='js', status=1}]
+```
+
+### 6.5 批量插入、修改、删除
+
+> public int[] batchUpdate(String sql, List<Object[]> batchArgs)
+>
+> 参数：
+>
+> sql：sql语句
+>
+> batchArgs：sql中占位符的对象数组集合
+
+> 以批量添加为例
+>
+> 批量修改、删除：sql、batchArgs两参数改变
+
+1. BookDao
+
+```java
+void batchAdd(List<Object[]> books);
+```
+
+2. BookDaoImpl
+
+```java
+@Override
+public void batchAdd(List<Object[]> books) {
+    String sql = "insert into book(name,status) values(?,?)";
+    int[] ints = jdbcTemplate.batchUpdate(sql, books);
+    System.out.println(Arrays.toString(ints));
+}
+```
+
+3. BookService
+
+```java
+public void batchAdd() {
+    Object[] o1 = {"Java", 0};
+    Object[] o2 = {"Mysql", 1};
+    Object[] o3 = {"Spring", 0};
+    List<Object[]> objects = new ArrayList<>();
+    objects.add(o1);
+    objects.add(o2);
+    objects.add(o3);
+    bookDao.batchAdd(objects);
+}
+```
+
+4. 测试
+
+```java
+@Test
+public void t5() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean.xml");
+    BookService bookService = context.getBean("bookService", BookService.class);
+
+    bookService.batchAdd();
+}
+```
+
+```shell
+[1, 1, 1]
+```
+
+## 7. Spring 事务
+
+### 7.1 事务概念
+
+1. 概念
+
+> 对数据库的一系列操作，要么都成功，要么都失败
+
+2. 事务的四个特征(**ACID**)
+
+> （1）原子性
+>
+> （2）一致性
+>
+> （3）隔离性
+>
+> （4）持久性
+
+### 7.2 事务操作准备
+
+> 以转账为例
+
+#### 7.2.1 数据表
+
+```sql
+CREATE TABLE t_account(
+	id INT PRIMARY KEY auto_increment,
+	username VARCHAR(20),
+	money INT
+); 
+
+INSERT INTO t_account(username, money) VALUES('A', 1000);
+INSERT INTO t_account(username, money) VALUES('B', 1000);
+```
+
+#### 7.2.2 entity dao service
+
+##### 7.2.2.1 AccountEntity
+
+```java
+public class AccountEntity {
+    private Integer id;
+    private String username;
+    private Integer money;
+
+    public AccountEntity() {
+    }
+
+    public AccountEntity(Integer id, String username, Integer money) {
+        this.id = id;
+        this.username = username;
+        this.money = money;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public Integer getMoney() {
+        return money;
+    }
+
+    public void setMoney(Integer money) {
+        this.money = money;
+    }
+
+    @Override
+    public String toString() {
+        return "Account{" +
+                "id=" + id +
+                ", username='" + username + '\'' +
+                ", money=" + money +
+                '}';
+    }
+}
+```
+
+##### 7.2.2.2 AccountDao
+
+```java
+public interface AccountDao {
+    void addMoney();
+
+    void reduceMoney();
+}
+```
+
+##### 7.2.2.3 AccountDaoImpl
+
+```java
+@Repository
+public class AccountDaoImpl implements AccountDao {
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    /**
+     * A加100
+     */
+    @Override
+    public void addMoney() {
+        String sql = "update t_account set money=money+? where username=?";
+        jdbcTemplate.update(sql, 100, "A");
+    }
+
+    /**
+     * B减100
+     */
+    @Override
+    public void reduceMoney() {
+        String sql = "update t_account set money=money-? where username=?";
+        jdbcTemplate.update(sql, 100, "B");
+    }
+}
+```
+
+##### 7.2.2.4 AccountService
+
+```java
+@Service
+public class AccountService {
+    @Autowired
+    private AccountDao accountDao;
+
+    public void account() {
+        // 模拟转账
+        // B - 100
+        accountDao.reduceMoney();
+        // A + 100
+        accountDao.addMoney();
+    }
+}
+```
+
+#### 7.2.3 配置文件
+
+##### 7.2.3.1 bean.xml
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd">
+    <!--组件扫描-->
+    <context:component-scan base-package="org.learn.spring5"></context:component-scan>
+
+    <!-- 数据库连接池 -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="username" value="${jdbc.username}"></property>
+        <property name="password" value="${password}"></property>
+        <property name="driverClassName" value="${driverClassName}"></property>
+        <property name="url" value="${url}"></property>
+    </bean>
+    <!-- properties 配置文件 -->
+    <context:property-placeholder location="classpath:resource/jdbc.properties"/>
+
+    <!--JDBCTemplate对象-->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <!--注入dataSource-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+</beans>
+```
+
+##### 7.2.3.2 jdbc.properties
+
+```properties
+jdbc.username=root
+password=hua123456
+driverClassName=com.mysql.cj.jdbc.Driver
+url=jdbc:mysql://localhost:3306/test?characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowMultiQueries=true
+```
+
+#### 7.2.4 测试
+
+```java
+@Test
+public void t1() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean.xml");
+    AccountService accountService = context.getBean("accountService", AccountService.class);
+    accountService.account();
+}
+```
+
+### 7.3 Spring 事务管理介绍
+
+1. **事务添加到**JavaEE三层结构的**Service层**
+2. Spring 进行事务管理操作两种方式
+    1. 编程式事务管理（try-catch 方式，有异常再回滚操作）
+    2. **申明式事务管理(使用)**
+3. 申明式事务管理
+    1. **注解方式**
+    2. xml配置
+4. Spring 申明式事务管理，**底层使用AOP**
+5. Spring 事务管理API
+
+提供了`PlatformTransactionManager`的实现类
+
+![image-20210615095759730](https://raw.githubusercontent.com/zuahua/image/master/common-note/20210615095759.png)
+
+### 7.4 申明式**注解方式**事务管理操作
+
+#### 7.4.1 在Spring配置文件配置事务管理器（对应类）
+
+```xml
+<!--创建事务管理器-->
+<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    <!--注入数据源-->
+    <property name="dataSource" ref="dataSource"></property>
+</bean>
+```
+
+#### 7.4.2 开启事务注解
+
+> 1. **tx** 名称空间
+> 2. 开启事务注解
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+                           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+    <!--组件扫描-->
+    <context:component-scan base-package="org.learn.spring5"></context:component-scan>
+
+    <!-- 数据库连接池 -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="username" value="${jdbc.username}"></property>
+        <property name="password" value="${password}"></property>
+        <property name="driverClassName" value="${driverClassName}"></property>
+        <property name="url" value="${url}"></property>
+    </bean>
+    <!-- properties 配置文件 -->
+    <context:property-placeholder location="classpath:resource/jdbc.properties"/>
+
+    <!--JDBCTemplate对象-->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <!--注入dataSource-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <!--创建事务管理器-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--注入数据源-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <!--开启事务注解-->
+    <tx:annotation-driven transaction-manager="transactionManager"></tx:annotation-driven>
+</beans>
+```
+
+#### 7.4.3 在Service类或方法上添加注解
+
+> @Transactional
+
+```java
+@Service
+@Transactional
+public class AccountService {
+    @Autowired
+    private AccountDao accountDao;
+
+    public void account() {
+        // 模拟转账
+        // B - 100
+        accountDao.reduceMoney();
+
+        // 模拟异常
+        int a = 10 / 0;
+
+        // A + 100
+        accountDao.addMoney();
+    }
+}
+```
+
+#### 7.4.4 测试
+
+```java
+@Test
+public void t1() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean.xml");
+    AccountService accountService = context.getBean("accountService", AccountService.class);
+    accountService.account();
+}
+```
+
+结果：出现异常，自动回滚
+
+### 7.5 事务注解参数
+
+#### 7.5.1 参数
+
+> `@Transactional(参数1...)`
+
+![image-20210616094825267](https://raw.githubusercontent.com/zuahua/image/master/common-note/20210616094832.png)
+
+#### 7.5.2 propagation：事务传播行为
+
+多事务方法之间进行调用，事务如何管理；
+
+![image-20210616095635832](https://raw.githubusercontent.com/zuahua/image/master/common-note/20210616095636.png)
+
+![image-20210616095726202](https://raw.githubusercontent.com/zuahua/image/master/common-note/20210616095726.png)
+
+#### 7.5.3 ioslation：事务隔离级别
+
+并发问题：
+
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421170018.png)
+
+隔离级别
+
+![](https://raw.githubusercontent.com/zuahua/image/master/commom-note/20210421171244.png)
+
+#### 7.5.4 timeout：超时时间
+
+> 事务需要在一定的时间提交，不提交需要回滚
+>
+> 默认值-1.单位：s
+
+#### 7.5.5 readOnly：只读
+
+> 默认值：false，操作可查询可修改
+>
+> true：表示只能查询
+
+#### 7.5.6 rollbackFor：回滚
+
+> 设置出现哪些异常才回滚
+
+#### 7.5.7 noRollbackFor：不回滚
+
+> 设置出现哪些异常不进行回滚
+
+### 7.6 申明式 **xml 配置方式**的事务管理操作
+
+#### 7.6.1 Spring 配置文件进行配置
+
+1. 配置事务管理器
+
+2. 配置通知
+
+3. 配置切入点、切面
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+                           http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd">
+    <!--组件扫描-->
+    <context:component-scan base-package="org.learn.spring5"></context:component-scan>
+
+    <!-- 数据库连接池 -->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="username" value="${jdbc.username}"></property>
+        <property name="password" value="${password}"></property>
+        <property name="driverClassName" value="${driverClassName}"></property>
+        <property name="url" value="${url}"></property>
+    </bean>
+    <!-- properties 配置文件 -->
+    <context:property-placeholder location="classpath:resource/jdbc.properties"/>
+
+    <!--JDBCTemplate对象-->
+    <bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+        <!--注入dataSource-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <!-- 1.创建事务管理器 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!--注入数据源-->
+        <property name="dataSource" ref="dataSource"></property>
+    </bean>
+
+    <!-- 2.配置通知 -->
+    <tx:advice id="txAdvice">
+        <!-- 配置事务参数 -->
+        <tx:attributes>
+            <tx:method name="account" propagation="REQUIRED"/>
+        </tx:attributes>
+    </tx:advice>
+
+    <!-- 3.配置切入点和切面 -->
+    <aop:config>
+        <!-- 配置切入点 -->
+        <aop:pointcut id="pt" expression="execution(* org.learn.spring5.service.AccountService.*(..))"/>
+        <!-- 配置切面 -->
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="pt"/>
+    </aop:config>
+</beans>
+```
+
+#### 7.6.2 Service层修改
+
+```java
+@Service
+public class AccountService {
+    @Autowired
+    private AccountDao accountDao;
+
+    public void account() {
+        // 模拟转账
+        // B - 100
+        accountDao.reduceMoney();
+
+        // 模拟异常
+        int a = 10 / 0;
+
+        // A + 100
+        accountDao.addMoney();
+    }
+}
+```
+
+#### 7.6.3 测试
+
+```java
+@Test
+public void t2() {
+    ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("resource/bean2.xml");
+    AccountService accountService = context.getBean("accountService", AccountService.class);
+    accountService.account();
+}
+```
+
+结果：除0异常，事务自动回滚
+
+### 7.7 完全注解申明式事务管理
+
+#### 7.7.1 创建配置类代理xml配置文件
+
+> @PropertySource(value = "classpath:resource/jdbc.properties") // 读取properties文件 数据库属性
+>
+> @Bean
+
+**TxConfig.java**
+
+```java
+@Configuration // 配置类
+@ComponentScan(basePackages = "org.learn.spring5") // 组件扫描
+@EnableTransactionManagement // 开启事务
+@PropertySource(value = "classpath:resource/jdbc.properties") // 数据库属性
+public class TxConfig {
+    @Value(value = "${jdbc.username}")
+    private String username;
+
+    @Value(value = "${password}")
+    private String password;
+
+    @Value(value = "${driverClassName}")
+    private String driverClassName;
+
+    @Value(value = "${url}")
+    private String url;
+
+    /**
+     * DruidDataSource 数据库
+     *
+     * @return
+     */
+    @Bean
+    public DruidDataSource getDruidDataSource() {
+        DruidDataSource dataSource = new DruidDataSource();
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
+        dataSource.setDriverClassName(driverClassName);
+        dataSource.setUrl(url);
+        return dataSource;
+    }
+
+    /**
+     * JdbcTemplate
+     *
+     * @param dataSource
+     * @return
+     */
+    @Bean
+    public JdbcTemplate getJdbcTemplate(DataSource dataSource) { // IOC容器中找dataSource（根据类型）
+        JdbcTemplate jdbcTemplate = new JdbcTemplate();
+        // 注入 dataSource
+        jdbcTemplate.setDataSource(dataSource);
+        return jdbcTemplate;
+    }
+
+    /**
+     * DataSourceTransactionManager 事务管理器
+     *
+     * @return
+     */
+    @Bean
+    public DataSourceTransactionManager getDataSourceTransactionManager(DataSource dataSource) {
+        DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
+        transactionManager.setDataSource(dataSource);
+        return transactionManager;
+    }
+}
+```
+
+#### 7.7.2 测试
+
+```java
+@Test
+public void t3() {
+    AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(TxConfig.class);
+    AccountService accountService = context.getBean("accountService", AccountService.class);
+    accountService.account();
+}
+```
 
 
 
