@@ -3003,7 +3003,7 @@ public void t2() {
 
 ### 7.7 完全注解申明式事务管理
 
-#### 7.7.1 创建配置类代理xml配置文件
+#### 7.7.1 创建配置类代替xml配置文件
 
 > @PropertySource(value = "classpath:resource/jdbc.properties") // 读取properties文件 数据库属性
 >
@@ -3083,7 +3083,113 @@ public void t3() {
 }
 ```
 
+### 7.8 Spring5新功能 整合日志框架 **Log4j2** 
 
+#### 7.8.1 介绍
+
+> 1. Spring5 框架自带了通用的日志封装
+>
+> 2. Spring5 已经移除了Log4jConfigListener，官方建议使用**Log4j2**
+
+#### 7.8.2 引入 jar 包
+
+> log4j-api-2.14.1.jar
+>
+> log4j-core-2.14.1.jar
+>
+> log4j-slf4j-impl-2.14.1.jar
+>
+> slf4j-api-1.7.30.jar
+
+#### 7.8.3 创建 **log4j2.xml** 配置文件
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 日志级别以及优先级排序：OFF > FATAL > ERROR > WARN > INFO > DEBUG > TRACE > ALL -->
+<!-- Configuration后面的status用于设置log4j2自身内部的信息输出 -->
+<Configuration status="INFO">
+    <Appenders>
+        <!-- 默认打印到控制台 -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <!-- 打印格式 -->
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+    </Appenders>
+    <!-- 定义Logger，引入Appender -->
+    <!-- root：用于指定项目的根日志，如果没有单独指定Logger，则会使用root作为默认的日志输出 -->
+    <Loggers>
+        <!-- 打印日志级别 -->
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+</Configuration>
+```
+
+#### 7.8.4 测试
+
+```java
+package test;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * @author zh
+ * @createTime 2021/6/17 10:14
+ */
+public class LogTest {
+    private static final Logger log = LoggerFactory.getLogger(LogTest.class);
+
+    public static void main(String[] args) {
+        log.info("Test 1");
+        log.warn("Test 2");
+    }
+}
+```
+
+```shell
+2021-06-17 10:16:33.179 [main] INFO  test.LogTest - Test 1
+2021-06-17 10:16:33.183 [main] WARN  test.LogTest - Test 2
+```
+
+### 7.9 Spring5 新功能 @Nullable
+
+> 可用在方法、属性、参数上，表示可为空
+
+```java
+@Nullable
+public int getId();
+```
+
+```java
+@Nullable
+public String str;
+```
+
+```java
+public String getName(@Nullable int id){}
+```
+
+### Spring5 新功能 核心容器支持函数式风格 GenericApplicationContext
+
+> 用户注册对象到Spring容器
+>
+> `GenericApplicationContext`
+
+```java
+@Test
+public void t4() {
+    // 1 创建 GenericAppplicationContext 对象
+    GenericApplicationContext context = new GenericApplicationContext();
+    // 2 注册对象
+    context.refresh();
+    context.registerBean("logTest1", LogTest.class, () -> new LogTest());
+    // 3 获取注册对象
+    LogTest logTest1 = context.getBean("logTest1", LogTest.class);
+    System.out.println(logTest1);
+}
+```
 
 
 
