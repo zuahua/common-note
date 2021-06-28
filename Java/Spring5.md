@@ -3083,15 +3083,15 @@ public void t3() {
 }
 ```
 
-### 7.8 Spring5新功能 整合日志框架 **Log4j2** 
+## 8. Spring5新功能 整合日志框架 **Log4j2** 
 
-#### 7.8.1 介绍
+### 8.1 介绍
 
 > 1. Spring5 框架自带了通用的日志封装
 >
 > 2. Spring5 已经移除了Log4jConfigListener，官方建议使用**Log4j2**
 
-#### 7.8.2 引入 jar 包
+### 8.2 引入 jar 包
 
 > log4j-api-2.14.1.jar
 >
@@ -3101,7 +3101,7 @@ public void t3() {
 >
 > slf4j-api-1.7.30.jar
 
-#### 7.8.3 创建 **log4j2.xml** 配置文件
+### 8.3 创建 **log4j2.xml** 配置文件
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -3126,7 +3126,7 @@ public void t3() {
 </Configuration>
 ```
 
-#### 7.8.4 测试
+### 8.4 测试
 
 ```java
 package test;
@@ -3153,7 +3153,7 @@ public class LogTest {
 2021-06-17 10:16:33.183 [main] WARN  test.LogTest - Test 2
 ```
 
-### 7.9 Spring5 新功能 @Nullable
+## 9. Spring5 新功能 @Nullable
 
 > 可用在方法、属性、参数上，表示可为空
 
@@ -3171,8 +3171,10 @@ public String str;
 public String getName(@Nullable int id){}
 ```
 
-### Spring5 新功能 核心容器支持函数式风格 GenericApplicationContext
+## 10. Spring5 新功能 函数式注册对象
 
+> 核心容器支持函数式风格 GenericApplicationContext
+>
 > 用户注册对象到Spring容器
 >
 > `GenericApplicationContext`
@@ -3191,17 +3193,162 @@ public void t4() {
 }
 ```
 
+## 11.Spring5 新功能 整合JUnit5测试框架
+
+![](https://raw.githubusercontent.com/zuahua/image/master/common-note3/20210627112605.png)
+
+### 11.1 整合JUnit5
+
+1. 引入依赖
+
+> spring-test-5.2.6.RELEASE.jar
+
+2. 引入JUnit5 包
+3. 创建测试类
+
+> @ExtendWith(SpringExtension.class)
+> @ContextConfiguration("classpath:resource/bean2.xml")
+
+```java
+@ExtendWith(SpringExtension.class)
+@ContextConfiguration("classpath:resource/bean2.xml")
+public class Jtest5 {
+    @Autowired
+    private AccountService accountService;
+
+    @Test
+    public void t1() {
+        accountService.account();
+    }
+}
+```
+
+4. 也可使用复合注解代替上面两个注解
+
+> @SpringJUnitConfig(locations = "classpath:resource/bean2.xml")
+
+```java
+@SpringJUnitConfig(locations = "classpath:resource/bean2.xml")
+public class Jtest5 {
+    @Autowired
+    private AccountService accountService;
+
+    @Test
+    public void t1() {
+        accountService.account();
+    }
+}
+```
+
+## 12.Spring5新功能 WebFlux
+
+> 官方文档：https://docs.spring.io/spring-framework/docs/current/reference/html/web-reactive.html
+
+### 12.1 Spring WebFlux 基本介绍
+
+#### 12.1.1 WebFlux
+
+> WebFulx
+>
+> 1. 是Spring5添加的新的模块，用于  Web 开发，功能和 SpringMVC 类似，WebFlux 适用**响应式编程**的框架。
+> 2. 传统 web 框架，SpringMVC 基于 Servlet 容器，WebFlux 是一种**异步非阻塞**框架，Servlet3.1 以后才支持异步非阻塞，核心是基于 Reactor 的相关 API 实现的。
+
+#### 12.1.2 异步非阻塞
+
+> 什么是异步非阻塞？
+>
+> 1. 异步和同步针对**调用者**，调用者发送请求，如果等着对方回应之后才去做其他事情就是**同步**，如果发送请求之后不等着对方回应就去做其他事情就是**异步**。
+> 2. 阻塞和非阻塞针对**被调用者**，被调用者收到请求后，做完请求任务不马上反馈给调用者即为**阻塞**；做完请求任务马上反馈再去做其他事情就是**非阻塞**。
+
+#### 12.1.3 WebFlux 特点
+
+> WebFlux 特点：
+>
+> 1. 异步非阻塞：在有限资源下，提高系统**吞吐量和伸缩性**，以 **Reactor 为基础**实现响应式编程；
+> 2. 函数式编程：Spring5 基于 Java8，WebFlux 使用 Java8 **函数式编程**方式实现路由请求。
+
+#### 12.1.4 WebFlux 与 SpringMVC 比较
+
+> WebFlux 与 SpringMVC 比较：
+>
+> <img src="https://raw.githubusercontent.com/zuahua/image/master/common-note3/20210627172942.png" alt="image-20210627172942459" style="zoom:67%;" />
+>
+> 1. 两种框架都可使用注解方式，都可运行在 Tomcat 等容器中；
+> 2. SpringMVC 使用**命令式编程**，WebFlux 采用**异步响应式编程**。
+
+### 12.2 响应式编程
+
+#### 12.2.1 什么是响应式编程
+
+> **简称RP（Reactive Programming）**
+>
+> 响应式编程是一种面向**数据流**和**变化传播**的编程范式。这意味着可以在编程语言中很方便地表达静态或动态的数据流，而相关的计算模型会自动将变化的值通过数据流进行传播。(百度百科)
+>
+> 电子表格程序就是响应式编程的一个例子。单元格可以包含字面值或类似"=B1+C1"的公式，而包含公式的单元格的值会依据其他单元格的值的变化而变化。
+>
+> <https://baike.baidu.com/item/%E5%93%8D%E5%BA%94%E5%BC%8F%E7%BC%96%E7%A8%8B/15549849?fr=aladdin>
+
+#### 12.2.2 Java8以及之前版本的响应式编程
+
+> 使用**观察者模式**两个类**Observer**和**Observable**
+
+例：
+
+```java
+public class ReactorObserveDemo extends Observable {
+    public static void main(String[] args) {
+        ReactorObserveDemo observeDemo = new ReactorObserveDemo();
+        // 添加观察者
+        observeDemo.addObserver((o, arg) -> {
+            System.out.println("发生变化1");
+        });
+
+        observeDemo.addObserver((o, arg) -> {
+            System.out.println("发生变化2");
+        });
+        // 设置变化状态
+        observeDemo.setChanged();
+        // 通知
+        observeDemo.notifyObservers();
+    }
+}
+```
+
+```shell
+发生变化2
+发生变化1
+```
+
+#### 12.2.3 Reactor底层使用Flow实现响应式编程
+
+> Flow是Java9中的特性；WebFlux中的Reactor底层基于Flow进行了封装优化
+
+![image-20210628153753199](https://raw.githubusercontent.com/zuahua/image/master/common-note3/20210628153800.png)
+
+![image-20210628153850102](https://raw.githubusercontent.com/zuahua/image/master/common-note3/20210628153850.png)
+
+#### 12.2.4 Reactor实现响应式编程
+
+> 1. 响应式编程中，Reactor是满足Reactive规范的框架；
+> 2. Reactor有两个核心类，**Mono**和**Flux**，这两个类都实现了接口Publisher，提供一系列的操作；
+> 3. Flux返回**N**个元素；
+> 4. Mono只能返回**0或1**个元素。
+
+<img src="https://raw.githubusercontent.com/zuahua/image/master/common-note3/20210628155726.png" alt="image-20210628155726360" style="zoom:80%;" />
+
+> **Flux**和**Mono**都是数据流的发布者，都可发出**三种信号**：
+>
+> 1. 元素值
+> 2. 错误信号
+> 3. 完成信号
+>
+> 错误信号和完成信号都代表**终止信号**，用于**告诉订阅者数据流结束了**，**错误信号终止数据流的同时把错误信息传递给订阅者。**
 
 
 
+## 学习至<https://www.bilibili.com/video/BV1Vf4y127N5?p=55&spm_id_from=pageDriver>
 
-
-
-
-
-
-
-
+2021/6/20
 
 
 
