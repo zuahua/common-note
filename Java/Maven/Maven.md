@@ -2,7 +2,7 @@
 
 ### settings.xml
 
-同名目录下有
+阿里云maven目录
 
 ### IDEA 配置
 
