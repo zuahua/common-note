@@ -49,6 +49,98 @@ YEAR 1 bytes YYYY 1901 2155 0000
 ### 建表相关
 
 ```sql
+-- 用户表
+drop table if exists t_user; 
+create table t_user(
+	id bigint unsigned auto_increment,
+	login_name varchar(32) comment '唯一登录名',
+	name varchar(32) comment '姓名',
+	password varchar(64) comment '密码',
+	email varchar(64) comment '邮箱',
+	mobile varchar(32) comment '手机号',
+	is_deleted tinyint unsigned default 0 comment '是否删除',
+	gmt_create datetime default now() comment '创建时间',
+	gmt_modified datetime default now() comment '更新时间',
+	constraint pk_id primary key(id),
+	constraint uk_login_name unique key(login_name)
+);
+insert into t_user(login_name,name,password,email,mobile) values('zh','zh','123456','innochangfox@foxmail.com','18784212478');
+
+-- 角色表
+drop table if exists t_role;
+create table t_role(
+	id bigint unsigned auto_increment,
+	name varchar(32) comment '角色名称',
+	remark varchar(64) comment '名称备注',
+	is_deleted tinyint unsigned default 0 comment '是否删除',
+	gmt_create datetime default now() comment '创建时间',
+	gmt_modified datetime default now() comment '更新时间',
+	constraint pk_id primary key(id)
+);
+insert into t_role(name,remark) values('superAdmin','超级管理员');
+insert into t_role(name,remark) values('admin','管理员');
+insert into t_role(name,remark) values('generalUser','普通注册用户');
+insert into t_role(name,remark) values('visitor','游客');
+
+
+-- 用户角色表
+drop table if exists t_user_role;
+create table t_user_role(
+	id bigint unsigned auto_increment,
+	user_id bigint unsigned not null,
+	role_id bigint unsigned not null,
+	is_deleted tinyint unsigned default 0 comment '是否删除',
+	gmt_create datetime default now() comment '创建时间',
+	gmt_modified datetime default now() comment '更新时间',
+	constraint pk_id primary key(id)
+);
+insert into t_user_role(user_id,role_id) values(1,1);
+
+-- 权限表
+drop table if exists t_authority;
+create table t_authority(
+	id bigint unsigned auto_increment,
+	name varchar(32) not null comment '权限名称',
+	remark varchar(64) not null comment '权限备注',
+	is_deleted tinyint unsigned default 0 comment '是否删除',
+	gmt_create datetime default now() comment '创建时间',
+	gmt_modified datetime default now() comment '更新时间',
+	constraint pk_id primary key(id)
+);
+insert into t_authority(name,remark) values('/user/query','查-用户权限');
+insert into t_authority(name,remark) values('/user/add','添加-用户权限');
+insert into t_authority(name,remark) values('/user/update','修改-用户权限');
+insert into t_authority(name,remark) values('/user/delete','删除-用户权限');
+
+-- 角色权限表
+drop table if exists t_role_authority;
+create table t_role_authority(
+	id bigint unsigned auto_increment,
+	role_id bigint unsigned not null,
+	authority_id bigint unsigned not null,
+	is_deleted tinyint unsigned default 0 comment '是否删除',
+	gmt_create datetime default now() comment '创建时间',
+	gmt_modified datetime default now() comment '更新时间',
+	constraint pk_id primary key(id)
+);
+-- 超级管理员
+insert into t_role_authority(role_id,authority_id) values(1,1);
+insert into t_role_authority(role_id,authority_id) values(1,2);
+insert into t_role_authority(role_id,authority_id) values(1,3);
+insert into t_role_authority(role_id,authority_id) values(1,4);
+-- 管理员
+insert into t_role_authority(role_id,authority_id) values(2,1);
+insert into t_role_authority(role_id,authority_id) values(2,2);
+insert into t_role_authority(role_id,authority_id) values(2,3);
+insert into t_role_authority(role_id,authority_id) values(2,4);
+-- 注册用户
+insert into t_role_authority(role_id,authority_id) values(3,1);
+insert into t_role_authority(role_id,authority_id) values(3,3);
+```
+
+
+
+```sql
 create table user(
 	id int PRIMARY KEY auto_increment,
 	name VARCHAR(10),

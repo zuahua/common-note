@@ -1,3 +1,11 @@
+## 教育邮箱申请免费使用
+
+<https://www.jetbrains.com/shop/eform/students?_ga=2.210989397.1533324881.1625485083-1209500050.1624246991>
+
+## 插件推荐
+
+<https://www.bilibili.com/read/cv6147210>
+
 ## 后端
 
 ### Spring MVC
