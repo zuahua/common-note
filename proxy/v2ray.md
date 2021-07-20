@@ -127,3 +127,13 @@
   ```
   
   
+
+### 微软商店、UWP 不走代理解决
+
+管理员 CMD运行：
+
+```shell
+# 解除全部uwp应用的网络隔离
+FOR /F "tokens=11 delims=\" %p IN ('REG QUERY "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppContainer\Mappings"') DO CheckNetIsolation.exe LoopbackExempt -a -p=%p
+```
+
