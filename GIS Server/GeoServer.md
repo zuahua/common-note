@@ -19,7 +19,7 @@
 文档：<https://docs.geoserver.org/latest/en/user/gettingstarted/web-admin-quickstart/index.html>
 
 1. 下载二进制文件，解压后 **运行** ***bin/startup.bat***。
-2. 服务启动在本地 `http://localhost:8080/geoserver/web/`
+2. 服务启动在本地 <http://localhost:8080/geoserver/web/>
 3. 登录，默认用户名 ***admin***，密码 ***geoserver***
 4. ***Layer Preview***
    1. 点击 ***OpenLayers*** 预览
@@ -48,6 +48,26 @@
       - 通过单击“***根据数据计算***”然后单击“***Compute from native bounds***”链接来生成图层的边界框。
       - 保存
 5. 预览
+
+### 发布教程二-imagesky
+
+1. **工作区**
+
+![image-20210719172942174](D:\Program Files\TyporaImage\image-20210719172942174.png)
+
+![image-20210719173017850](D:\Program Files\TyporaImage\image-20210719173017850.png)
+
+2. 数据存储
+
+![image-20210719173209316](D:\Program Files\TyporaImage\image-20210719173209316.png)
+
+3. 图层
+
+![image-20210719173255147](D:\Program Files\TyporaImage\image-20210719173255147.png)
+
+![image-20210719173320861](D:\Program Files\TyporaImage\image-20210719173320861.png)
+
+![image-20210719173349735](D:\Program Files\TyporaImage\image-20210719173349735.png)
 
 #### 发布 PostGIS
 
