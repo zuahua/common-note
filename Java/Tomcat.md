@@ -29,6 +29,31 @@ bin目录下运行：
 catalina run
 ```
 
+#### 1.4 服务器运行 strat.bat 闪退
+
+调试方法：start.bat 最后加 `pause`，再双击运行，能够查看错误信息;或者将**start.bat** 拖进**CMD**
+
+##### 1.4.1 出现：JAVA_HOME JRE_HOME没找到 （但是环境变量已配置）
+
+在 `setclasspath.bat` 文件开头加入路径
+
+```shell
+set JAVA_HOME=D:\Program Files\Java\jdk1.8.0_192
+set JRE_HOME=D:\Program Files\Java\jre1.8.0_192
+```
+
+##### 1.4.2 **he CATALINA_HOME environment variable is not defined correctly**
+
+环境变量配置了**CATALINA_HOME**还是不行；
+
+
+
+**start.bat**中头部添加
+
+```she
+set CATALINA_HOME=D:\apache-tomcat-9.0.48-9090
+```
+
 
 
 ### 2. 配置调优
