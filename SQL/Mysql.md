@@ -355,6 +355,51 @@ SELECT
 
 
 
+## Mysql 56 忘记密码
+
+```shell
+# cd 到mysql目录，任务管理器中关闭 mysqld.exe再执行
+mysqld --skip-grant-tables
+# 新开一个CMD
+cd C:\Program Files\MySQL\MySQL Server 5.6\bin
+# 直接登录
+mysql
+
+use mysql;
+
+select user,host,password from user;
+
+update user set password=password('123456') where user='root' and host='localhost';
+
+update user set password=PASSWORD("") where User='root';
+```
+
+```shell
+update user set Password=PASSWORD('123456') where user='root'; 
+
+FLUSH PRIVILEGES;
+```
+
+```shell
+alter user 'root'@'localhost' identified by '123456';
+
+mysqld --init-file='C:\Program Files\MySQL\MySQL Server 5.6\mysqlc.txt' --console
+```
+
+```shell
+grant all privileges on *.* to 'root'@'localhost' identified by '123456';
+
+# mysql错误：The MySQL server is running with the --skip-grant-tables option so it cannot execute this statement解决方法
+
+FLUSH PRIVILEGES;
+```
+
+```shell
+update mysql.user set authentication_string=password('123456') where user='root' and host ='localhost';
+
+select user,host,password,authentication_string from user;
+```
+
 
 
 

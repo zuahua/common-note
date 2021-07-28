@@ -145,11 +145,15 @@ set JAVA_OPTS=-Xms128m -Xmx350m
 <Context path="/hello"  docBase="E:\test" debug="0" reloadable="true"/> 
 ```
 
+### 命令窗口名称
 
+在运行多个tomcat窗口的时候，可以通过修改tomcat命令窗口的名字来区分不同的tomcat，修改如下：
 
+找到tomcat下面的这个文件：**tomcat_home\bin\catalina.bat** 
 
+搜索到：set _EXECJAVA=start "Tomcat" %_RUNJAVA%
 
-
+修改 Tomcat名称
 
 
 

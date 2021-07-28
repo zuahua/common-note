@@ -2,7 +2,7 @@
 
 [TOC]
 
-## 基础
+## 1. 基础
 
 ### String
 
@@ -23,7 +23,7 @@ System.out.println("D:\\data\\xxxxxxxxxxxxxxxxx.doc".lastIndexOf("\\"));
 
 
 
-## 十三章 IO流
+## 2. 十三章 IO流
 
 ### RandomAccessFile 随机存取文件流
 
@@ -172,7 +172,7 @@ apache的commons-io包
 | :----------------: | :---------: |
 | org.apache.commons | commons-io  |
 
-## 十四章 网络编程
+## 3. 十四章 网络编程
 
 **实现网络主机的相互通信**
 
@@ -888,5 +888,12 @@ public class URLTest1 {
         }
     }
 }
+```
+
+## 4. Java 执行 CMD 命令
+
+```java
+// cmd 命令 String
+Process proc = Runtime.getRuntime().exec(cmd);
 ```
 
