@@ -357,6 +357,10 @@ SELECT
 
 ## Mysql 56 忘记密码
 
+**忘记密码想想，到底能找到密码吗？**
+
+**SpringBoot配置里面不是吗？**
+
 ```shell
 # cd 到mysql目录，任务管理器中关闭 mysqld.exe再执行
 mysqld --skip-grant-tables
@@ -370,8 +374,6 @@ use mysql;
 select user,host,password from user;
 
 update user set password=password('123456') where user='root' and host='localhost';
-
-update user set password=PASSWORD("") where User='root';
 ```
 
 ```shell
@@ -395,6 +397,7 @@ FLUSH PRIVILEGES;
 ```
 
 ```shell
+# 高版本 authentication_string
 update mysql.user set authentication_string=password('123456') where user='root' and host ='localhost';
 
 select user,host,password,authentication_string from user;
