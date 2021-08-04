@@ -10,7 +10,7 @@
 
 ![](https://raw.githubusercontent.com/zuahua/image/master/common-note-c/20210708175622.png)
 
-### 2. 高级用法
+### 2. 高级用法-JDK8
 
 #### 2.1 List 结果分组
 
@@ -38,4 +38,12 @@ private String getDateKey(Map<String, Object> map) {
     return map.get("date").toString();
 }
 ```
+
+#### 2.2 最大最小值
+
+> `Stream.max()`
+>
+> `Stream.min()`
+
+[【Java 8 新特性】Java Stream 通过min()和max()获取列表最小值和最大值_猫巳的博客-CSDN博客](https://blog.csdn.net/qq_31635851/article/details/111167101)
 
