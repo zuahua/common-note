@@ -41,3 +41,15 @@
 |                 查类                  |       ctrl + shift + N        |
 |             代码上下移动              |        SHIFT+ALT+上下         |
 
+### mapper.xml 格式化
+
+1. 连接数据源
+2. IDEA 设置
+
+```mermaid
+graph LR
+	Settings --> id1["Languages & Frameworks"] --> id2["SQL Dialects"]
+```
+
+设置为需要的，如 **MySql**
+
