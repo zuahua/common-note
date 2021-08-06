@@ -203,7 +203,7 @@ public class Teacher {
 
 > 1. 效率
 >
->    BeanUtils.copyProperties()采用的是反射，实际上当重复调用时效率是比较低的。（实际测试实际测试Spring的BeanUtils在生成 次数为1000000时需要1.6秒，而使用MapStruct仅需要69毫秒）
+>    `BeanUtils.copyProperties()`采用的是反射，实际上当重复调用时效率是比较低的。（实际测试实际测试Spring的BeanUtils在生成 次数为1000000时需要1.6秒，而使用MapStruct仅需要69毫秒）
 >
 > 2. 功能强
 
