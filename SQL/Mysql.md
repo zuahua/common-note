@@ -390,6 +390,8 @@ SELECT
 | %Y   | 年，4 位                                       |
 | %y   | 年，2 位                                       |
 
+
+
 ## Mysql 56 忘记密码
 
 **忘记密码想想，到底能找到密码吗？**
@@ -436,6 +438,15 @@ FLUSH PRIVILEGES;
 update mysql.user set authentication_string=password('123456') where user='root' and host ='localhost';
 
 select user,host,password,authentication_string from user;
+```
+
+## 2.常用
+
+### 2.1 日期加减
+
+```sql
+# 月份减2
+SELECT DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 2 MONTH), '%Y-%m');
 ```
 
 

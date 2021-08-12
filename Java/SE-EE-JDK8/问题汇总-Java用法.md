@@ -47,3 +47,13 @@ private String getDateKey(Map<String, Object> map) {
 
 [【Java 8 新特性】Java Stream 通过min()和max()获取列表最小值和最大值_猫巳的博客-CSDN博客](https://blog.csdn.net/qq_31635851/article/details/111167101)
 
+#### 2.4 分组排序
+
+```java
+// 以时间分组
+TreeMap<Date, List<WeatherEntity>> collect = weatherEntityList.stream().collect(Collectors.groupingBy(WeatherEntity::getDate,
+                                                                           TreeMap::new, Collectors.toList()));
+// 降序
+NavigableMap<Date, List<WeatherEntity>> descendingMap = collect.descendingMap();
+```
+
