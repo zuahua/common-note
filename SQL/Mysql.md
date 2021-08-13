@@ -449,7 +449,13 @@ select user,host,password,authentication_string from user;
 SELECT DATE_FORMAT(DATE_ADD(NOW(), INTERVAL 2 MONTH), '%Y-%m');
 ```
 
+## 3. 问题
 
+### 3.1 编码
+
+> https://www.cnblogs.com/pony/archive/2010/01/29/1659064.html
+
+> mysql.ini配置文件 default_character_set=utf8
 
 
 
