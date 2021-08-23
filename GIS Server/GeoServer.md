@@ -1,6 +1,6 @@
 ## GeoServer 笔记
 
-### 基础介绍
+### 1. 基础介绍
 
 > GeoServer是用于共享地理空间数据的开源服务器。
 >
@@ -12,9 +12,9 @@
 
 [^下载说明]:包括二进制、Javadoc等
 
-### 快速开始
+### 2. 快速开始
 
-#### 使用 Web 管理界面
+#### 2.1 使用 Web 管理界面
 
 文档：<https://docs.geoserver.org/latest/en/user/gettingstarted/web-admin-quickstart/index.html>
 
@@ -25,7 +25,7 @@
    1. 点击 ***OpenLayers*** 预览
    2. 点击 表格头Title ，可按字母排序
 
-#### 发布 shapefile
+#### 2.2 发布 shapefile
 
 1. 将 ***shapefile*** 复制到 ***<GEOSERVER_DATA_DIR>/data_dir*** （默认）目录下
 2. 创建 **工作区**
@@ -48,6 +48,16 @@
       - 通过单击“***根据数据计算***”然后单击“***Compute from native bounds***”链接来生成图层的边界框。
       - 保存
 5. 预览
+
+#### 2.3 端口修改
+
+文件**start.ini**
+
+```ini
+jetty.http.port=8081
+```
+
+
 
 ### 发布教程二-imagesky
 
