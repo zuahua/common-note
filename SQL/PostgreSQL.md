@@ -45,6 +45,8 @@ CACHE 1;
 
 ```sql
 nextval('test_id_seq')
+
+alter tabl表名 alter column id set default nextval(‘表名_id_seq’);
 ```
 
 3. **serial**
